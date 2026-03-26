@@ -50,13 +50,8 @@ export function Navbar() {
       >
         <div className="max-w-[1600px] mx-auto px-4 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-12">
-            <Link href="/" className="flex items-center gap-3 group">
-              <img
-                src={`${import.meta.env.BASE_URL}images/logo.png`}
-                alt="Blasce Logo"
-                className="w-8 h-8 md:w-10 md:h-10 transition-transform group-hover:scale-110 group-active:scale-95"
-              />
-              <span className="font-display font-black text-2xl md:text-3xl tracking-tight text-white">
+            <Link href="/" className="flex items-center group">
+              <span className="font-display font-black text-2xl md:text-3xl tracking-tight text-white transition-opacity group-hover:opacity-80">
                 Blasce<span className="text-primary">.</span>
               </span>
             </Link>

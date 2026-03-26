@@ -39,8 +39,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         <div className="relative z-10 flex flex-col justify-end p-12">
-          <Link href="/" className="flex items-center gap-3 mb-auto">
-            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Blasce" className="w-10 h-10" />
+          <Link href="/" className="flex items-center mb-auto">
             <span className="font-display font-black text-3xl text-white">Blasce<span className="text-primary">.</span></span>
           </Link>
           <blockquote className="text-white/70 text-lg italic leading-relaxed">
@@ -59,8 +58,7 @@ export default function Login() {
           className="w-full max-w-md"
         >
           {/* Mobile logo */}
-          <Link href="/" className="flex items-center gap-3 mb-10 lg:hidden">
-            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Blasce" className="w-8 h-8" />
+          <Link href="/" className="flex items-center mb-10 lg:hidden">
             <span className="font-display font-black text-2xl text-white">Blasce<span className="text-primary">.</span></span>
           </Link>
 
