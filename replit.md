@@ -39,12 +39,14 @@ artifacts-monorepo/
 
 ## Blasce Features
 
-- **Homepage**: Auto-rotating hero carousel (6 trending items, 9s crossfade, dot progress indicators, prev/next nav, pause-on-hover), Trending Now, Top Rated, New Releases carousels, curated genre rows (Drama, Crime, Sci-Fi, Comedy, Action, Fantasy, Horror, Animation)
-- **Browse page**: Filter by type (movie/TV), genre chips, search bar, sort dropdown (Relevance/Newest/Oldest/Top Rated/A–Z), full responsive grid
+- **Homepage**: Auto-rotating hero carousel (6 trending items, 9s crossfade, dot progress indicators, prev/next nav, pause-on-hover), Trending Now, Top Rated, New Releases carousels, curated genre rows (Drama, Crime, Sci-Fi, Comedy, Action, Fantasy, Horror, Animation, Fantasy & Epic)
+- **Browse page**: Filter by type (movie/TV), genre chips (only genres with content shown), search bar, sort dropdown (Relevance/Newest/Oldest/Top Rated/A–Z), full responsive grid
 - **Detail page**: Cinematic backdrop, trailer embed, IMDB + RT score badges, cast grid, episode list (TV shows by season), watchlist button, Watch Now stream player
 - **Watchlist page**: Saved content grid, remove items (JWT-authenticated)
-- **Auth**: JWT-based signup/login/me; accounts stored in users table; token in localStorage
+- **Auth**: JWT-based signup/login/me; accounts stored in users table; token in localStorage; all form inputs have correct autocomplete attributes
 - **Profile/Account page** (`/profile`): Update display name, change password, sign out; "Account Settings" link in navbar dropdown
+- **Search overlay**: `"/"` keyboard shortcut opens search; shows Trending Now grid when idle; keyboard navigation with ↑↓ arrows, Enter to open, ESC to close; visual highlight on focused result; shows ↑↓/↵ hint in overlay
+- **Navbar**: Active state logic fixed — plain `/browse` no longer activates "TV Shows" link; uses URLSearchParams comparison for query-param–based nav links
 
 ## Database Schema
 

@@ -128,13 +128,23 @@ function HeroContent({ item }: { item: Content }) {
           Play Now
         </Link>
         <WatchlistButton contentId={item.id} variant="full" />
-        <Link
-          href={`/content/${item.id}`}
-          className="flex items-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/18 text-white rounded-xl font-semibold backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-base"
-        >
-          <Info className="w-5 h-5" />
-          More Info
-        </Link>
+        {item.trailerUrl ? (
+          <Link
+            href={`/content/${item.id}#trailer-section`}
+            className="flex items-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/18 text-white rounded-xl font-semibold backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-base"
+          >
+            <Play className="w-4 h-4" />
+            Watch Trailer
+          </Link>
+        ) : (
+          <Link
+            href={`/content/${item.id}`}
+            className="flex items-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/18 text-white rounded-xl font-semibold backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-base"
+          >
+            <Info className="w-5 h-5" />
+            More Info
+          </Link>
+        )}
       </div>
     </motion.div>
   );

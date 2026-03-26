@@ -36,6 +36,20 @@ export function Navbar() {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  // Keyboard shortcut: "/" opens search (ignore when focused in an input)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key === "/" && !isSearchOpen) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isSearchOpen]);
+
   const navLinks = [
     { label: "Home", path: "/" },
     { label: "Movies", path: "/browse?type=movie" },
@@ -45,9 +59,18 @@ export function Navbar() {
 
   const avatarSeed = user?.displayName ?? "guest_user";
 
-  const isNavActive = (path: string) =>
-    location === path ||
-    (path.includes("?") && location.startsWith(path.split("?")[0]) && path.includes(location));
+  const isNavActive = (path: string) => {
+    if (location === path) return true;
+    if (!path.includes("?")) return false;
+    const [basePath, queryString] = path.split("?");
+    if (location !== basePath) return false;
+    const pathParams = new URLSearchParams(queryString);
+    const currentParams = new URLSearchParams(window.location.search);
+    for (const [key, value] of pathParams.entries()) {
+      if (currentParams.get(key) !== value) return false;
+    }
+    return true;
+  };
 
   return (
     <>
@@ -101,10 +124,13 @@ export function Navbar() {
             {/* Search */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/8 rounded-full transition-colors"
-              aria-label="Search"
+              className="group relative p-2 text-white/60 hover:text-white hover:bg-white/8 rounded-full transition-colors"
+              aria-label="Search (press /)"
             >
               <Search className="w-5 h-5" />
+              <span className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/90 px-2 py-1 text-[11px] text-white/70 opacity-0 group-hover:opacity-100 transition-opacity delay-300 border border-white/10">
+                Press /
+              </span>
             </button>
 
             {/* Mobile hamburger */}

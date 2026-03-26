@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "wouter";
 import { Search, X, Star, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useListContent, useGetTrending } from "@workspace/api-client-react";
+import type { Content } from "@workspace/api-client-react";
 import { SkeletonCard } from "./SkeletonCard";
 
 interface SearchOverlayProps {
@@ -13,7 +14,10 @@ interface SearchOverlayProps {
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [focusedIdx, setFocusedIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     if (isOpen) {
@@ -21,6 +25,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     } else {
       setQuery("");
       setDebounced("");
+      setFocusedIdx(-1);
     }
   }, [isOpen]);
 
@@ -29,13 +34,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     return () => clearTimeout(t);
   }, [query]);
 
+  // Reset focused index whenever results change
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    setFocusedIdx(-1);
+  }, [debounced]);
 
   const isSearching = debounced.length >= 2;
   const { data: results, isLoading: searchLoading } = useListContent(
@@ -43,6 +45,48 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     { query: { enabled: isSearching } }
   );
   const { data: trending } = useGetTrending({ limit: 8 });
+
+  const displayItems = isSearching ? (results?.items ?? []) : (trending?.items ?? []);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+      return;
+    }
+    if (!displayItems.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIdx(i => {
+        const next = Math.min(i + 1, displayItems.length - 1);
+        resultRefs.current[next]?.scrollIntoView({ block: "nearest" });
+        return next;
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIdx(i => {
+        if (i <= 0) {
+          inputRef.current?.focus();
+          return -1;
+        }
+        const prev = i - 1;
+        resultRefs.current[prev]?.scrollIntoView({ block: "nearest" });
+        return prev;
+      });
+    } else if (e.key === "Enter" && focusedIdx >= 0) {
+      e.preventDefault();
+      const item = displayItems[focusedIdx];
+      if (item) {
+        navigate(`/content/${item.id}`);
+        onClose();
+      }
+    }
+  }, [displayItems, focusedIdx, navigate, onClose]);
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <AnimatePresence>
@@ -87,6 +131,12 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                   <X className="w-5 h-5" />
                 </button>
               )}
+              <div className="hidden sm:flex items-center gap-1.5 text-white/30 text-xs">
+                <kbd className="bg-white/8 border border-white/10 px-1.5 py-0.5 rounded text-[11px]">↑↓</kbd>
+                <span>navigate</span>
+                <kbd className="bg-white/8 border border-white/10 px-1.5 py-0.5 rounded text-[11px]">↵</kbd>
+                <span>open</span>
+              </div>
               <button
                 onClick={onClose}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white rounded-lg text-sm font-medium transition-colors border border-white/8"
@@ -111,12 +161,17 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     </div>
                   ) : results?.items?.length ? (
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
-                      {results.items.map(item => (
-                        <Link
+                      {results.items.map((item: Content, idx: number) => (
+                        <a
                           key={item.id}
+                          ref={el => { resultRefs.current[idx] = el; }}
                           href={`/content/${item.id}`}
-                          onClick={onClose}
-                          className="group block rounded-xl overflow-hidden bg-secondary hover:ring-2 hover:ring-primary/50 transition-all"
+                          onClick={e => { e.preventDefault(); navigate(`/content/${item.id}`); onClose(); }}
+                          className={`group block rounded-xl overflow-hidden transition-all outline-none ${
+                            focusedIdx === idx
+                              ? "ring-2 ring-primary scale-[1.03]"
+                              : "bg-secondary hover:ring-2 hover:ring-primary/50"
+                          }`}
                         >
                           <div className="aspect-[2/3] relative">
                             {item.posterUrl ? (
@@ -134,7 +189,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                               )}
                             </div>
                           </div>
-                        </Link>
+                        </a>
                       ))}
                     </div>
                   ) : (
@@ -152,12 +207,17 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     <span className="text-white/50 text-sm font-semibold uppercase tracking-wider">Trending Now</span>
                   </div>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-3 md:gap-4">
-                    {trending?.items?.map(item => (
-                      <Link
+                    {trending?.items?.map((item: Content, idx: number) => (
+                      <a
                         key={item.id}
+                        ref={el => { resultRefs.current[idx] = el; }}
                         href={`/content/${item.id}`}
-                        onClick={onClose}
-                        className="group block rounded-xl overflow-hidden bg-secondary hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={e => { e.preventDefault(); navigate(`/content/${item.id}`); onClose(); }}
+                        className={`group block rounded-xl overflow-hidden transition-all outline-none ${
+                          focusedIdx === idx
+                            ? "ring-2 ring-primary scale-[1.03]"
+                            : "bg-secondary hover:ring-2 hover:ring-primary/50"
+                        }`}
                       >
                         <div className="aspect-[2/3] relative">
                           {item.posterUrl ? (
@@ -169,7 +229,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             <p className="text-white text-[11px] font-semibold line-clamp-1">{item.title}</p>
                           </div>
                         </div>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </>

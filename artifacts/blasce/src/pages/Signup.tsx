@@ -72,6 +72,7 @@ export default function Signup() {
               <input
                 type="text"
                 placeholder="Display name"
+                autoComplete="username"
                 value={form.displayName}
                 onChange={e => setForm(f => ({ ...f, displayName: e.target.value }))}
                 required
@@ -85,6 +86,7 @@ export default function Signup() {
               <input
                 type="email"
                 placeholder="Email address"
+                autoComplete="email"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 required
