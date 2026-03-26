@@ -48,7 +48,7 @@ func scanContent(row interface {
                 &c.PosterURL, &c.BackdropURL, &c.TrailerURL,
                 &c.ReleaseYear, &c.Rating, &c.ImdbScore, &c.RtScore, &c.Duration,
                 &c.Featured, &c.Trending, &c.TrendingRank,
-                &c.Seasons, &c.TotalEpisodes, &c.StreamURL,
+                &c.Seasons, &c.TotalEpisodes, &c.StreamURL, &c.ImdbID,
         )
         return c, err
 }
@@ -67,7 +67,7 @@ const contentSelectCols = `
         poster_url, backdrop_url, trailer_url,
         release_year, rating, imdb_score, rt_score, duration,
         featured, trending, trending_rank,
-        seasons, total_episodes, stream_url
+        seasons, total_episodes, stream_url, imdb_id
 `
 
 func writeError(w http.ResponseWriter, status int, msg string) {

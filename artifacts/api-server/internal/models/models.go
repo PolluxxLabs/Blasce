@@ -19,6 +19,7 @@ type Content struct {
         Seasons       *int     `json:"seasons"`
         TotalEpisodes *int     `json:"totalEpisodes"`
         StreamURL     *string  `json:"streamUrl"`
+        ImdbID        *string  `json:"imdbId"`
         Genres        []string `json:"genres"`
 }
 

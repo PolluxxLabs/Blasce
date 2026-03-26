@@ -86,6 +86,7 @@ export interface Content {
   seasons?: number | null;
   totalEpisodes?: number | null;
   streamUrl?: string | null;
+  imdbId?: string | null;
 }
 
 export type ContentDetail = Content & {

@@ -46,7 +46,12 @@ function TrailerEmbed({ videoId }: { videoId: string }) {
   );
 }
 
-function SeasonSelector({ episodes }: { episodes: Episode[] | null | undefined }) {
+interface SeasonSelectorProps {
+  episodes: Episode[] | null | undefined;
+  onPlayEpisode: (season: number, episode: number) => void;
+}
+
+function SeasonSelector({ episodes, onPlayEpisode }: SeasonSelectorProps) {
   const [openSeason, setOpenSeason] = useState(1);
 
   if (!episodes || episodes.length === 0) return null;
@@ -81,10 +86,16 @@ function SeasonSelector({ episodes }: { episodes: Episode[] | null | undefined }
                 >
                   <div className="divide-y divide-white/5">
                     {eps.map(ep => (
-                      <div key={ep.id} className="flex items-start gap-5 px-6 py-4 hover:bg-white/3 transition-colors group cursor-pointer">
+                      <div
+                        key={ep.id}
+                        onClick={() => onPlayEpisode(ep.season, ep.episode)}
+                        className="flex items-start gap-5 px-6 py-4 hover:bg-white/5 transition-colors group cursor-pointer"
+                      >
                         <div className="w-32 sm:w-44 aspect-video flex-shrink-0 rounded-xl overflow-hidden bg-secondary/50 relative">
                           <div className="w-full h-full flex items-center justify-center">
-                            <Play className="w-6 h-6 text-white/30 group-hover:text-white/60 transition-colors" />
+                            <div className="w-10 h-10 rounded-full bg-white/10 group-hover:bg-primary/40 flex items-center justify-center transition-colors">
+                              <Play className="w-5 h-5 fill-white text-white pl-0.5" />
+                            </div>
                           </div>
                           <div className="absolute bottom-1.5 right-1.5 bg-black/80 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
                             {formatDuration(ep.duration)}
@@ -93,7 +104,7 @@ function SeasonSelector({ episodes }: { episodes: Episode[] | null | undefined }
                         <div className="flex-grow pt-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-primary text-xs font-bold font-mono">E{ep.episode}</span>
-                            <h4 className="text-white font-semibold text-sm truncate">{ep.title}</h4>
+                            <h4 className="text-white font-semibold text-sm truncate group-hover:text-primary/90 transition-colors">{ep.title}</h4>
                           </div>
                           <p className="text-white/50 text-xs leading-relaxed line-clamp-2">{ep.description}</p>
                         </div>
@@ -115,6 +126,8 @@ export default function Detail() {
   const id = params?.id ? parseInt(params.id, 10) : 0;
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "cast">("overview");
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [playerSeason, setPlayerSeason] = useState<number | undefined>(undefined);
+  const [playerEpisode, setPlayerEpisode] = useState<number | undefined>(undefined);
 
   const { data: content, isLoading, isError } = useGetContent(id);
 
@@ -146,6 +159,18 @@ export default function Detail() {
   const tabs: Array<"overview" | "cast" | "episodes"> = hasEpisodes
     ? ["overview", "cast", "episodes"]
     : ["overview", "cast"];
+
+  const canStream = !!content.imdbId;
+
+  const openPlayer = (season?: number, episode?: number) => {
+    setPlayerSeason(season);
+    setPlayerEpisode(episode);
+    setPlayerOpen(true);
+  };
+
+  const openEpisodePlayer = (season: number, episode: number) => {
+    openPlayer(season, episode);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -240,13 +265,17 @@ export default function Detail() {
               </div>
 
               <div className="flex flex-wrap gap-3 items-center">
-                {content.streamUrl && (
+                {canStream && (
                   <button
-                    onClick={() => setPlayerOpen(true)}
+                    onClick={() =>
+                      content.type === "tv"
+                        ? openPlayer(1, 1)
+                        : openPlayer()
+                    }
                     className="flex items-center gap-2.5 px-6 py-3 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/30"
                   >
                     <Play className="w-5 h-5 fill-current" />
-                    Watch Now
+                    {content.type === "tv" ? "Watch S01 E01" : "Watch Now"}
                   </button>
                 )}
                 {content.trailerUrl && (
@@ -255,7 +284,7 @@ export default function Detail() {
                       document.getElementById("trailer-section")?.scrollIntoView({ behavior: "smooth" });
                     }}
                     className={`flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-base transition-all hover:scale-105 active:scale-95 shadow-xl ${
-                      content.streamUrl
+                      canStream
                         ? "bg-white/10 text-white hover:bg-white/20 border border-white/15"
                         : "bg-white text-black hover:bg-white/90"
                     }`}
@@ -405,7 +434,10 @@ export default function Detail() {
 
           {activeTab === "episodes" && hasEpisodes && (
             <motion.div key="episodes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <SeasonSelector episodes={content.episodes} />
+              <SeasonSelector
+                episodes={content.episodes}
+                onPlayEpisode={openEpisodePlayer}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -419,10 +451,13 @@ export default function Detail() {
       </div>
 
       {/* ── Stream Player Modal ── */}
-      {playerOpen && content.streamUrl && (
+      {playerOpen && content.imdbId && (
         <StreamPlayer
-          streamUrl={content.streamUrl}
+          imdbId={content.imdbId}
           title={content.title}
+          type={content.type as "movie" | "tv"}
+          season={playerSeason}
+          episode={playerEpisode}
           onClose={() => setPlayerOpen(false)}
         />
       )}
