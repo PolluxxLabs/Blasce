@@ -53,6 +53,7 @@ artifacts-monorepo/
 - `cast` — cast members per content
 - `episodes` — TV episodes per season
 - `watchlist` — user-session watchlist entries
+- `users` — registered accounts (id UUID, email UNIQUE, password_hash, display_name, created_at)
 
 ## Content Library
 
@@ -68,6 +69,9 @@ Scores are sourced from IMDB's public dataset and Rotten Tomatoes. The scraper i
 - `GET /api/content/top-rated` — sorted by IMDB score desc
 - `GET /api/content/new-releases` — sorted by release year desc
 - `GET /api/genres` — all genres
+- `POST /api/auth/signup` — create account {displayName, email, password} → {token, id, email, displayName, createdAt}
+- `POST /api/auth/login` — login {email, password} → {token, id, email, displayName, createdAt}
+- `GET /api/auth/me` — verify JWT, returns user info
 - `GET /api/watchlist?sessionId=` — user watchlist
 - `POST /api/watchlist` — add to watchlist
 - `DELETE /api/watchlist/:contentId?sessionId=` — remove from watchlist
