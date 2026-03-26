@@ -17,6 +17,32 @@ export interface SuccessResponse {
   success: boolean;
 }
 
+export interface SignupRequest {
+  displayName: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  id: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+}
+
 export interface CastMember {
   name: string;
   character: string;
@@ -85,13 +111,12 @@ export interface GenreListResponse {
 
 export interface WatchlistRequest {
   contentId: number;
-  sessionId: string;
 }
 
 export interface WatchlistItem {
   id: number;
   contentId: number;
-  sessionId: string;
+  userId: string;
   addedAt: string;
 }
 
@@ -102,6 +127,7 @@ export type ListContentParams = {
   featured?: boolean;
   limit?: number;
   offset?: number;
+  sort?: ListContentSort;
 };
 
 export type ListContentType =
@@ -112,14 +138,48 @@ export const ListContentType = {
   tv: "tv",
 } as const;
 
+export type ListContentSort =
+  (typeof ListContentSort)[keyof typeof ListContentSort];
+
+export const ListContentSort = {
+  newest: "newest",
+  oldest: "oldest",
+  rating: "rating",
+  title: "title",
+} as const;
+
 export type GetTrendingParams = {
   limit?: number;
 };
 
-export type GetWatchlistParams = {
-  sessionId: string;
+export type GetTopRatedParams = {
+  limit?: number;
+  type?: GetTopRatedType;
 };
 
-export type RemoveFromWatchlistParams = {
-  sessionId: string;
+export type GetTopRatedType =
+  (typeof GetTopRatedType)[keyof typeof GetTopRatedType];
+
+export const GetTopRatedType = {
+  movie: "movie",
+  tv: "tv",
+} as const;
+
+export type GetNewReleasesParams = {
+  limit?: number;
+  type?: GetNewReleasesType;
+};
+
+export type GetNewReleasesType =
+  (typeof GetNewReleasesType)[keyof typeof GetNewReleasesType];
+
+export const GetNewReleasesType = {
+  movie: "movie",
+  tv: "tv",
+} as const;
+
+export type UpdateProfileBody = {
+  displayName?: string;
+  /** @minLength 6 */
+  password?: string;
 };

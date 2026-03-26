@@ -26,10 +26,6 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "API Server"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -41,18 +37,6 @@ outputType = "webview"
 task = "shell.exec"
 args = "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/blasce run dev"
 waitForPort = 5173
-
-[[workflows.workflow]]
-name = "API Server"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=8080 sh -c 'cd /home/runner/workspace/artifacts/api-server && go run .'"
-waitForPort = 8080
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [agent]
 stack = "PNPM_WORKSPACE"

@@ -19,6 +19,7 @@ interface AuthContextValue extends AuthState {
   signup: (displayName: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUserProfile: (displayName?: string, password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -78,8 +79,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, token: null, isLoading: false });
   }, []);
 
+  const updateUserProfile = useCallback(async (displayName?: string, password?: string) => {
+    const token = localStorage.getItem("blasce_token");
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ displayName, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update profile");
+    persist(data.token, { id: data.id, email: data.email, displayName: data.displayName, createdAt: data.createdAt });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, signup, login, logout }}>
+    <AuthContext.Provider value={{ ...state, signup, login, logout, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

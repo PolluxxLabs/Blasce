@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Search, X } from "lucide-react";
-import { useListContent, useListGenres, type ListContentType } from "@workspace/api-client-react";
+import { Search, X, SlidersHorizontal } from "lucide-react";
+import { useListContent, useListGenres, type ListContentType, type ListContentSort } from "@workspace/api-client-react";
 import { ContentCard } from "@/components/content/ContentCard";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ export default function Browse() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [type, setType] = useState<ListContentType | undefined>(initialType || undefined);
   const [genre, setGenre] = useState<string | undefined>(undefined);
+  const [sort, setSort] = useState<ListContentSort | undefined>(undefined);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -35,6 +36,7 @@ export default function Browse() {
     type,
     genre,
     search: debouncedSearch || undefined,
+    sort,
     limit: 60,
   });
 
@@ -65,21 +67,39 @@ export default function Browse() {
               ))}
             </div>
 
-            {/* Search */}
-            <div className="relative group flex-1 max-w-sm">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35 group-focus-within:text-primary transition-colors" />
-              <input
-                type="text"
-                placeholder="Search titles..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-9 text-white placeholder:text-white/30 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/40 focus:bg-white/8 transition-all"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 hover:text-white transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+            <div className="flex items-center gap-3 ml-auto">
+              {/* Sort */}
+              <div className="relative flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-white/35 flex-shrink-0" />
+                <select
+                  value={sort ?? ""}
+                  onChange={e => setSort((e.target.value as ListContentSort) || undefined)}
+                  className="appearance-none bg-white/5 border border-white/10 rounded-xl py-2.5 pl-3 pr-8 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/40 transition-all cursor-pointer"
+                >
+                  <option value="">Relevance</option>
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="rating">Top Rated</option>
+                  <option value="title">A–Z</option>
+                </select>
+              </div>
+
+              {/* Search */}
+              <div className="relative group flex-1 max-w-sm">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35 group-focus-within:text-primary transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search titles..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-9 text-white placeholder:text-white/30 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/40 focus:bg-white/8 transition-all"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

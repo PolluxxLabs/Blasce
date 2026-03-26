@@ -5,6 +5,7 @@
  * Blasce Streaming API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListContentSort } from "./listContentSort";
 import type { ListContentType } from "./listContentType";
 
 export type ListContentParams = {
@@ -14,4 +15,5 @@ export type ListContentParams = {
   featured?: boolean;
   limit?: number;
   offset?: number;
+  sort?: ListContentSort;
 };

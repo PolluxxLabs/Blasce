@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./authResponse";
+export * from "./authUser";
 export * from "./castMember";
 export * from "./content";
 export * from "./contentDetail";
@@ -15,12 +17,18 @@ export * from "./episode";
 export * from "./errorResponse";
 export * from "./genre";
 export * from "./genreListResponse";
+export * from "./getNewReleasesParams";
+export * from "./getNewReleasesType";
+export * from "./getTopRatedParams";
+export * from "./getTopRatedType";
 export * from "./getTrendingParams";
-export * from "./getWatchlistParams";
 export * from "./healthStatus";
 export * from "./listContentParams";
+export * from "./listContentSort";
 export * from "./listContentType";
-export * from "./removeFromWatchlistParams";
+export * from "./loginRequest";
+export * from "./signupRequest";
 export * from "./successResponse";
+export * from "./updateProfileBody";
 export * from "./watchlistItem";
 export * from "./watchlistRequest";

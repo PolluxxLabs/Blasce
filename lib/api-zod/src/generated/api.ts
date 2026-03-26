@@ -28,6 +28,7 @@ export const ListContentQueryParams = zod.object({
   featured: zod.coerce.boolean().optional(),
   limit: zod.coerce.number().default(listContentQueryLimitDefault),
   offset: zod.coerce.number().default(listContentQueryOffsetDefault),
+  sort: zod.enum(["newest", "oldest", "rating", "title"]).optional(),
 });
 
 export const ListContentResponse = zod.object({
@@ -198,6 +199,80 @@ export const GetTrendingResponse = zod.object({
 });
 
 /**
+ * @summary Get top-rated content sorted by IMDB score
+ */
+export const getTopRatedQueryLimitDefault = 12;
+
+export const GetTopRatedQueryParams = zod.object({
+  limit: zod.coerce.number().default(getTopRatedQueryLimitDefault),
+  type: zod.enum(["movie", "tv"]).optional(),
+});
+
+export const GetTopRatedResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      title: zod.string(),
+      type: zod.enum(["movie", "tv"]),
+      description: zod.string(),
+      posterUrl: zod.string().nullish(),
+      backdropUrl: zod.string().nullish(),
+      trailerUrl: zod.string().nullish(),
+      releaseYear: zod.number(),
+      rating: zod.string(),
+      imdbScore: zod.number().nullish(),
+      rtScore: zod.number().nullish(),
+      duration: zod.number().nullish(),
+      genres: zod.array(zod.string()),
+      featured: zod.boolean(),
+      trending: zod.boolean(),
+      trendingRank: zod.number().nullish(),
+      seasons: zod.number().nullish(),
+      totalEpisodes: zod.number().nullish(),
+      streamUrl: zod.string().nullish(),
+    }),
+  ),
+  total: zod.number(),
+});
+
+/**
+ * @summary Get newest content sorted by release year
+ */
+export const getNewReleasesQueryLimitDefault = 12;
+
+export const GetNewReleasesQueryParams = zod.object({
+  limit: zod.coerce.number().default(getNewReleasesQueryLimitDefault),
+  type: zod.enum(["movie", "tv"]).optional(),
+});
+
+export const GetNewReleasesResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      title: zod.string(),
+      type: zod.enum(["movie", "tv"]),
+      description: zod.string(),
+      posterUrl: zod.string().nullish(),
+      backdropUrl: zod.string().nullish(),
+      trailerUrl: zod.string().nullish(),
+      releaseYear: zod.number(),
+      rating: zod.string(),
+      imdbScore: zod.number().nullish(),
+      rtScore: zod.number().nullish(),
+      duration: zod.number().nullish(),
+      genres: zod.array(zod.string()),
+      featured: zod.boolean(),
+      trending: zod.boolean(),
+      trendingRank: zod.number().nullish(),
+      seasons: zod.number().nullish(),
+      totalEpisodes: zod.number().nullish(),
+      streamUrl: zod.string().nullish(),
+    }),
+  ),
+  total: zod.number(),
+});
+
+/**
  * @summary List all genres
  */
 export const ListGenresResponse = zod.object({
@@ -212,12 +287,69 @@ export const ListGenresResponse = zod.object({
 });
 
 /**
- * @summary Get user watchlist
+ * @summary Create a new account
  */
-export const GetWatchlistQueryParams = zod.object({
-  sessionId: zod.coerce.string(),
+export const AuthSignupBody = zod.object({
+  displayName: zod.string(),
+  email: zod.string(),
+  password: zod.string(),
 });
 
+export const AuthSignupResponse = zod.object({
+  token: zod.string(),
+  id: zod.string(),
+  email: zod.string(),
+  displayName: zod.string(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Login with email and password
+ */
+export const AuthLoginBody = zod.object({
+  email: zod.string(),
+  password: zod.string(),
+});
+
+export const AuthLoginResponse = zod.object({
+  token: zod.string(),
+  id: zod.string(),
+  email: zod.string(),
+  displayName: zod.string(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get current authenticated user
+ */
+export const AuthMeResponse = zod.object({
+  id: zod.string(),
+  email: zod.string(),
+  displayName: zod.string(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Update current user's profile (displayName and/or password)
+ */
+export const updateProfileBodyPasswordMin = 6;
+
+export const UpdateProfileBody = zod.object({
+  displayName: zod.string().optional(),
+  password: zod.string().min(updateProfileBodyPasswordMin).optional(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  token: zod.string(),
+  id: zod.string(),
+  email: zod.string(),
+  displayName: zod.string(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get authenticated user's watchlist
+ */
 export const GetWatchlistResponse = zod.object({
   items: zod.array(
     zod.object({
@@ -250,13 +382,12 @@ export const GetWatchlistResponse = zod.object({
  */
 export const AddToWatchlistBody = zod.object({
   contentId: zod.number(),
-  sessionId: zod.string(),
 });
 
 export const AddToWatchlistResponse = zod.object({
   id: zod.number(),
   contentId: zod.number(),
-  sessionId: zod.string(),
+  userId: zod.string(),
   addedAt: zod.date(),
 });
 
@@ -265,10 +396,6 @@ export const AddToWatchlistResponse = zod.object({
  */
 export const RemoveFromWatchlistParams = zod.object({
   contentId: zod.coerce.number(),
-});
-
-export const RemoveFromWatchlistQueryParams = zod.object({
-  sessionId: zod.coerce.string(),
 });
 
 export const RemoveFromWatchlistResponse = zod.object({

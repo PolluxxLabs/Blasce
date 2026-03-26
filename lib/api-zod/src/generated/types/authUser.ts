@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface WatchlistItem {
-  id: number;
-  contentId: number;
-  userId: string;
-  addedAt: Date;
+export interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
 }

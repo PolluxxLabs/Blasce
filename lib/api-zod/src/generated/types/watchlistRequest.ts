@@ -8,5 +8,4 @@
 
 export interface WatchlistRequest {
   contentId: number;
-  sessionId: string;
 }

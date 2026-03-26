@@ -40,10 +40,11 @@ artifacts-monorepo/
 ## Blasce Features
 
 - **Homepage**: Auto-rotating hero carousel (6 trending items, 9s crossfade, dot progress indicators, prev/next nav, pause-on-hover), Trending Now, Top Rated, New Releases carousels, curated genre rows (Drama, Crime, Sci-Fi, Comedy, Action, Horror, Animation)
-- **Browse page**: Filter by type (movie/TV), genre, search bar, full grid
-- **Detail page**: Cinematic backdrop, trailer embed, cast grid, episode list (TV shows by season), watchlist button
-- **Watchlist page**: Saved content grid, remove items
-- **Anonymous sessions**: UUID-based session stored in localStorage
+- **Browse page**: Filter by type (movie/TV), genre chips, search bar, sort dropdown (Relevance/Newest/Oldest/Top Rated/A–Z), full responsive grid
+- **Detail page**: Cinematic backdrop, trailer embed, IMDB + RT score badges, cast grid, episode list (TV shows by season), watchlist button, Watch Now stream player
+- **Watchlist page**: Saved content grid, remove items (JWT-authenticated)
+- **Auth**: JWT-based signup/login/me; accounts stored in users table; token in localStorage
+- **Profile/Account page** (`/profile`): Update display name, change password, sign out; "Account Settings" link in navbar dropdown
 
 ## Database Schema
 
@@ -57,32 +58,35 @@ artifacts-monorepo/
 
 ## Content Library
 
-16 titles in the database. Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
-Scores are sourced from IMDB's public dataset and Rotten Tomatoes. The scraper is at `scripts/src/scrape.py`.
-Stream URLs sourced from moviebox.ph via `scripts/src/moviebox_stream_scraper.py` (8/16 titles matched).
+30 titles in the database (16 original seed + 14 added via SQL). Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
+Stream URLs sourced from moviebox.ph (5 confirmed: IDs 5, 7, 11, 12, 13).
+Genre assignments in `content_genres` table (146 rows total).
 
 ## API Routes (Go)
 
-- `GET /api/content` — list with filters: ?type, ?genre, ?search, ?featured, ?limit, ?offset
+- `GET /api/content` — list with filters: ?type, ?genre, ?search, ?featured, ?sort (newest/oldest/rating/title), ?limit, ?offset
 - `GET /api/content/:id` — full detail with cast + episodes
 - `GET /api/content/featured/hero` — random featured item
-- `GET /api/content/trending/now` — trending items
+- `GET /api/content/trending/now` — trending items (ordered by trending_rank)
 - `GET /api/content/top-rated` — sorted by IMDB score desc
 - `GET /api/content/new-releases` — sorted by release year desc
 - `GET /api/genres` — all genres
 - `POST /api/auth/signup` — create account {displayName, email, password} → {token, id, email, displayName, createdAt}
 - `POST /api/auth/login` — login {email, password} → {token, id, email, displayName, createdAt}
 - `GET /api/auth/me` — verify JWT, returns user info
-- `GET /api/watchlist?sessionId=` — user watchlist
-- `POST /api/watchlist` — add to watchlist
-- `DELETE /api/watchlist/:contentId?sessionId=` — remove from watchlist
+- `PUT /api/auth/me` — update profile {displayName?, password?} → {token, id, email, displayName, createdAt}
+- `GET /api/watchlist` — JWT-authenticated user watchlist
+- `POST /api/watchlist` — JWT-authenticated, add to watchlist
+- `DELETE /api/watchlist/:contentId` — JWT-authenticated, remove from watchlist
 
 ## Critical Notes
 
 - Go `cast` SQL table must be quoted as `"cast"` (reserved keyword in PostgreSQL)
 - `rt_score` column is in content table (integer, nullable)
-- Watchlist is anonymous, uses UUID session ID in localStorage
+- Watchlist is JWT-authenticated (token from localStorage `blasce_token`)
 - Genre IDs: action=1, adventure=2, animation=3, comedy=4, crime=5, documentary=6, drama=7, fantasy=8, horror=9, mystery=10, romance=11, sci-fi=12, thriller=13, western=14
+- `setAuthTokenGetter(() => localStorage.getItem("blasce_token"))` wired in main.tsx
+- `AuthContext` exposes: signup, login, logout, updateUserProfile
 
 ## TypeScript & Composite Projects
 

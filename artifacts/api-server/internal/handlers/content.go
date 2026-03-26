@@ -182,6 +182,7 @@ func ListContent(w http.ResponseWriter, r *http.Request) {
         genre := q.Get("genre")
         search := q.Get("search")
         featured := q.Get("featured")
+        sort := q.Get("sort")
 
         limitStr := q.Get("limit")
         offsetStr := q.Get("offset")
@@ -239,12 +240,24 @@ func ListContent(w http.ResponseWriter, r *http.Request) {
                 return
         }
 
+        orderBy := "c.trending DESC, c.featured DESC, c.release_year DESC"
+        switch sort {
+        case "newest":
+                orderBy = "c.release_year DESC, c.id DESC"
+        case "oldest":
+                orderBy = "c.release_year ASC, c.id ASC"
+        case "rating":
+                orderBy = "c.imdb_score DESC NULLS LAST, c.id ASC"
+        case "title":
+                orderBy = "c.title ASC"
+        }
+
         mainQuery := fmt.Sprintf(`
                 SELECT %s FROM content c
                 %s
-                ORDER BY c.trending DESC, c.featured DESC, c.release_year DESC
+                ORDER BY %s
                 LIMIT $%d OFFSET $%d
-        `, contentSelectCols, whereClause, argIdx, argIdx+1)
+        `, contentSelectCols, whereClause, orderBy, argIdx, argIdx+1)
 
         args = append(args, limit, offset)
         rows, err := db.DB.Query(mainQuery, args...)

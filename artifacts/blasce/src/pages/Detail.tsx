@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRoute } from "wouter";
 import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGetContent, useListContent } from "@workspace/api-client-react";
+import { useGetContent, useListContent, type Episode, type CastMember, type Content } from "@workspace/api-client-react";
 import { FullPageLoader } from "@/components/ui/LoadingSpinner";
 import { WatchlistButton } from "@/components/content/WatchlistButton";
 import { ContentCarousel } from "@/components/content/ContentCarousel";
@@ -46,7 +46,7 @@ function TrailerEmbed({ videoId }: { videoId: string }) {
   );
 }
 
-function SeasonSelector({ episodes }: { episodes: NonNullable<ReturnType<typeof useGetContent>["data"]>["episodes"] }) {
+function SeasonSelector({ episodes }: { episodes: Episode[] | null | undefined }) {
   const [openSeason, setOpenSeason] = useState(1);
 
   if (!episodes || episodes.length === 0) return null;
@@ -143,7 +143,9 @@ export default function Detail() {
 
   const hasEpisodes = content.type === "tv" && content.episodes && content.episodes.length > 0;
   const backdropImage = content.backdropUrl || `${import.meta.env.BASE_URL}images/hero-bg.png`;
-  const tabs = (["overview", "cast"] as const).concat(hasEpisodes ? ["episodes" as const] : []);
+  const tabs: Array<"overview" | "cast" | "episodes"> = hasEpisodes
+    ? ["overview", "cast", "episodes"]
+    : ["overview", "cast"];
 
   return (
     <div className="min-h-screen bg-background pb-32">

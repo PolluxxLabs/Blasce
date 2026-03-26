@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface WatchlistItem {
-  id: number;
-  contentId: number;
-  userId: string;
-  addedAt: Date;
-}
+export type UpdateProfileBody = {
+  displayName?: string;
+  /** @minLength 6 */
+  password?: string;
+};

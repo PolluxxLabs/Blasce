@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X, LogOut, Bookmark, ChevronDown } from "lucide-react";
+import { Search, Menu, X, LogOut, Bookmark, ChevronDown, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -170,6 +170,14 @@ export function Navbar() {
                         >
                           <Bookmark className="w-4 h-4" />
                           My Watchlist
+                        </Link>
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-white/65 hover:text-white hover:bg-white/5 transition-colors text-sm"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Account Settings
                         </Link>
                       </div>
 

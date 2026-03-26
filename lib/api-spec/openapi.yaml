@@ -15,6 +15,8 @@ tags:
     description: User watchlist
   - name: genres
     description: Content genres
+  - name: auth
+    description: Authentication
 paths:
   /healthz:
     get:
@@ -63,6 +65,11 @@ paths:
           schema:
             type: integer
             default: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, rating, title]
       responses:
         "200":
           description: List of content
@@ -128,6 +135,54 @@ paths:
               schema:
                 $ref: "#/components/schemas/ContentListResponse"
 
+  /content/top-rated:
+    get:
+      operationId: getTopRated
+      tags: [movies]
+      summary: Get top-rated content sorted by IMDB score
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 12
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [movie, tv]
+      responses:
+        "200":
+          description: Top rated content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentListResponse"
+
+  /content/new-releases:
+    get:
+      operationId: getNewReleases
+      tags: [movies]
+      summary: Get newest content sorted by release year
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 12
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [movie, tv]
+      responses:
+        "200":
+          description: New releases
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentListResponse"
+
   /genres:
     get:
       operationId: listGenres
@@ -141,17 +196,127 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenreListResponse"
 
+  /auth/signup:
+    post:
+      operationId: authSignup
+      tags: [auth]
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "200":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: authLogin
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: authMe
+      tags: [auth]
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateProfile
+      tags: [auth]
+      summary: Update current user's profile (displayName and/or password)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        "200":
+          description: Updated user with a fresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /watchlist:
     get:
       operationId: getWatchlist
       tags: [watchlist]
-      summary: Get user watchlist
-      parameters:
-        - name: sessionId
-          in: query
-          required: true
-          schema:
-            type: string
+      summary: Get authenticated user's watchlist
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Watchlist items
@@ -163,6 +328,8 @@ paths:
       operationId: addToWatchlist
       tags: [watchlist]
       summary: Add content to watchlist
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -171,7 +338,7 @@ paths:
               $ref: "#/components/schemas/WatchlistRequest"
       responses:
         "200":
-          description: Updated watchlist
+          description: Added to watchlist
           content:
             application/json:
               schema:
@@ -182,17 +349,14 @@ paths:
       operationId: removeFromWatchlist
       tags: [watchlist]
       summary: Remove content from watchlist
+      security:
+        - bearerAuth: []
       parameters:
         - name: contentId
           in: path
           required: true
           schema:
             type: integer
-        - name: sessionId
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
         "200":
           description: Removed successfully
@@ -202,6 +366,12 @@ paths:
                 $ref: "#/components/schemas/SuccessResponse"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -226,6 +396,68 @@ components:
           type: boolean
       required:
         - success
+
+    SignupRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - displayName
+        - email
+        - password
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - token
+        - id
+        - email
+        - displayName
+        - createdAt
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - email
+        - displayName
+        - createdAt
 
     CastMember:
       type: object
@@ -393,11 +625,8 @@ components:
       properties:
         contentId:
           type: integer
-        sessionId:
-          type: string
       required:
         - contentId
-        - sessionId
 
     WatchlistItem:
       type: object
@@ -406,7 +635,7 @@ components:
           type: integer
         contentId:
           type: integer
-        sessionId:
+        userId:
           type: string
         addedAt:
           type: string
@@ -414,5 +643,5 @@ components:
       required:
         - id
         - contentId
-        - sessionId
+        - userId
         - addedAt

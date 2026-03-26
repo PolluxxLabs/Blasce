@@ -53,6 +53,7 @@ func main() {
                         r.Post("/signup", handlers.Signup)
                         r.Post("/login", handlers.Login)
                         r.Get("/me", handlers.Me)
+                        r.Put("/me", handlers.UpdateProfile)
                 })
 
                 // Watchlist requires authentication

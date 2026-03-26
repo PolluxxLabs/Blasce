@@ -98,6 +98,7 @@ export default function Signup() {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password (min. 6 characters)"
+                autoComplete="new-password"
                 value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 required
