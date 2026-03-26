@@ -45,7 +45,8 @@ artifacts-monorepo/
 - **Watchlist page**: Saved content grid, remove items (JWT-authenticated)
 - **Auth**: JWT-based signup/login/me; accounts stored in users table; token in localStorage; all form inputs have correct autocomplete attributes
 - **Profile/Account page** (`/profile`): Update display name, change password, sign out; "Account Settings" link in navbar dropdown
-- **Search overlay**: `"/"` keyboard shortcut opens search; shows Trending Now grid when idle; keyboard navigation with ↑↓ arrows, Enter to open, ESC to close; visual highlight on focused result; shows ↑↓/↵ hint in overlay
+- **Search overlay**: `"/"` keyboard shortcut opens search; powered by TMDB — searches the entire movie/TV catalog (500k+ titles); shows Trending Now when idle; keyboard navigation with ↑↓/Enter/ESC; results link to `/watch/movie/:tmdbId` or `/watch/tv/:tmdbId`
+- **Watch page** (`/watch/movie/:tmdbId`, `/watch/tv/:tmdbId`): Dynamic page for ANY TMDB title — loads poster, backdrop, genres, cast from TMDB; uses IMDB ID (fetched from TMDB external_ids) for stream embedding; TV shows show all seasons with real episode thumbnails and per-episode play buttons
 - **Navbar**: Active state logic fixed — plain `/browse` no longer activates "TV Shows" link; uses URLSearchParams comparison for query-param–based nav links
 - **Browse URL params**: Type, genre, and sort filters are all readable from the URL on page load — direct links like `/browse?genre=horror&sort=rating` fully pre-populate all filters; "See All" links from Top Rated/New Releases use correct sort params
 - **Scroll-to-top**: Navigating between pages automatically scrolls back to the top (via ScrollToTop component in App.tsx)

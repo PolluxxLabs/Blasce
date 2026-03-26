@@ -2,13 +2,30 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Search, X, Star, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useListContent, useGetTrending } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { useGetTrending } from "@workspace/api-client-react";
 import type { Content } from "@workspace/api-client-react";
 import { SkeletonCard } from "./SkeletonCard";
+import { searchTmdb, tmdbPoster, type TMDBSearchResult } from "@/lib/tmdb";
 
 interface SearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+function getItemRoute(item: TMDBSearchResult): string {
+  return item.media_type === "tv"
+    ? `/watch/tv/${item.id}`
+    : `/watch/movie/${item.id}`;
+}
+
+function getItemTitle(item: TMDBSearchResult): string {
+  return item.title ?? item.name ?? "Untitled";
+}
+
+function getItemYear(item: TMDBSearchResult): string {
+  const date = item.release_date ?? item.first_air_date ?? "";
+  return date.slice(0, 4);
 }
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
@@ -34,19 +51,22 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     return () => clearTimeout(t);
   }, [query]);
 
-  // Reset focused index whenever results change
   useEffect(() => {
     setFocusedIdx(-1);
   }, [debounced]);
 
   const isSearching = debounced.length >= 2;
-  const { data: results, isLoading: searchLoading } = useListContent(
-    { search: debounced, limit: 12 },
-    { query: { enabled: isSearching } }
-  );
+
+  const { data: tmdbResults, isLoading: searchLoading } = useQuery<TMDBSearchResult[]>({
+    queryKey: ["tmdb-search", debounced],
+    queryFn: () => searchTmdb(debounced),
+    enabled: isSearching,
+    staleTime: 2 * 60 * 1000,
+  });
+
   const { data: trending } = useGetTrending({ limit: 8 });
 
-  const displayItems = isSearching ? (results?.items ?? []) : (trending?.items ?? []);
+  const displayItems = isSearching ? (tmdbResults ?? []) : [];
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -77,7 +97,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       e.preventDefault();
       const item = displayItems[focusedIdx];
       if (item) {
-        navigate(`/content/${item.id}`);
+        navigate(getItemRoute(item));
         onClose();
       }
     }
@@ -103,7 +123,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             onClick={onClose}
           />
 
-          {/* Overlay content */}
+          {/* Panel */}
           <motion.div
             key="search-panel"
             initial={{ opacity: 0, y: -20 }}
@@ -120,14 +140,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Search movies, TV shows, actors..."
+                placeholder="Search any movie or TV show..."
                 className="flex-1 bg-transparent text-white text-xl placeholder:text-white/25 focus:outline-none"
               />
               {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="text-white/40 hover:text-white transition-colors"
-                >
+                <button onClick={() => setQuery("")} className="text-white/40 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               )}
@@ -146,61 +163,77 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               </button>
             </div>
 
-            {/* Results area */}
+            {/* Results */}
             <div className="overflow-y-auto flex-1 px-4 md:px-8 py-6" onClick={e => e.stopPropagation()}>
               {isSearching ? (
                 <>
                   <p className="text-white/35 text-sm mb-5">
                     {searchLoading
                       ? "Searching..."
-                      : `${results?.total ?? 0} result${results?.total !== 1 ? "s" : ""} for "${debounced}"`}
+                      : `${tmdbResults?.length ?? 0} result${(tmdbResults?.length ?? 0) !== 1 ? "s" : ""} for "${debounced}"`}
                   </p>
                   {searchLoading ? (
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
                       {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
                     </div>
-                  ) : results?.items?.length ? (
+                  ) : tmdbResults?.length ? (
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
-                      {results.items.map((item: Content, idx: number) => (
-                        <a
-                          key={item.id}
-                          ref={el => { resultRefs.current[idx] = el; }}
-                          href={`/content/${item.id}`}
-                          onClick={e => { e.preventDefault(); navigate(`/content/${item.id}`); onClose(); }}
-                          className={`group block rounded-xl overflow-hidden transition-all outline-none ${
-                            focusedIdx === idx
-                              ? "ring-2 ring-primary scale-[1.03]"
-                              : "bg-secondary hover:ring-2 hover:ring-primary/50"
-                          }`}
-                        >
-                          <div className="aspect-[2/3] relative">
-                            {item.posterUrl ? (
-                              <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            ) : (
-                              <div className="w-full h-full bg-secondary/80 flex items-center justify-center p-2 text-center text-white/30 text-xs">{item.title}</div>
-                            )}
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-2.5">
-                              <p className="text-white text-xs font-semibold line-clamp-1">{item.title}</p>
-                              {item.imdbScore != null && (
-                                <p className="text-yellow-400 text-[10px] flex items-center gap-0.5 mt-0.5">
-                                  <Star className="w-2.5 h-2.5 fill-current" />
-                                  {item.imdbScore.toFixed(1)}
-                                </p>
+                      {tmdbResults.map((item, idx) => {
+                        const poster = tmdbPoster(item.poster_path);
+                        const title = getItemTitle(item);
+                        const year = getItemYear(item);
+                        const route = getItemRoute(item);
+                        return (
+                          <a
+                            key={`${item.media_type}-${item.id}`}
+                            ref={el => { resultRefs.current[idx] = el; }}
+                            href={route}
+                            onClick={e => { e.preventDefault(); navigate(route); onClose(); }}
+                            className={`group block rounded-xl overflow-hidden transition-all outline-none ${
+                              focusedIdx === idx
+                                ? "ring-2 ring-primary scale-[1.03]"
+                                : "bg-secondary hover:ring-2 hover:ring-primary/50"
+                            }`}
+                          >
+                            <div className="aspect-[2/3] relative">
+                              {poster ? (
+                                <img src={poster} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              ) : (
+                                <div className="w-full h-full bg-secondary/80 flex items-center justify-center p-2 text-center text-white/30 text-xs">{title}</div>
                               )}
+                              <div className="absolute top-1.5 left-1.5">
+                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                                  item.media_type === "tv" ? "bg-blue-500/80 text-white" : "bg-primary/80 text-white"
+                                }`}>
+                                  {item.media_type === "tv" ? "TV" : "Film"}
+                                </span>
+                              </div>
+                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-2.5">
+                                <p className="text-white text-xs font-semibold line-clamp-1">{title}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  {year && <span className="text-white/40 text-[10px]">{year}</span>}
+                                  {item.vote_average != null && item.vote_average > 0 && (
+                                    <p className="text-yellow-400 text-[10px] flex items-center gap-0.5">
+                                      <Star className="w-2.5 h-2.5 fill-current" />
+                                      {item.vote_average.toFixed(1)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </a>
-                      ))}
+                          </a>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-white/30 text-lg">No results found for "{debounced}"</p>
+                      <p className="text-white/30 text-lg">No results for "{debounced}"</p>
                       <p className="text-white/20 text-sm mt-2">Try a different search term</p>
                     </div>
                   )}
                 </>
               ) : (
-                /* Trending section when no query */
+                /* Trending when idle */
                 <>
                   <div className="flex items-center gap-2 mb-5">
                     <TrendingUp className="w-4 h-4 text-primary" />

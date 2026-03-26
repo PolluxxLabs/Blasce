@@ -17,6 +17,7 @@ import Watchlist from "@/pages/Watchlist";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
+import Watch from "@/pages/Watch";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -71,6 +72,12 @@ function Router() {
       </Route>
       <Route path="/profile">
         <AppLayout><Profile /></AppLayout>
+      </Route>
+      <Route path="/watch/movie/:id">
+        <AppLayout><Watch /></AppLayout>
+      </Route>
+      <Route path="/watch/tv/:id">
+        <AppLayout><Watch /></AppLayout>
       </Route>
       <Route>
         <NotFound />
