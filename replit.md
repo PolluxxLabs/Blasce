@@ -14,7 +14,7 @@ Blasce is a full-stack streaming platform with a cinematic dark UI, browsing, se
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **API framework**: Go + chi router (migrated from Express)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
@@ -26,7 +26,7 @@ Blasce is a full-stack streaming platform with a cinematic dark UI, browsing, se
 ```text
 artifacts-monorepo/
 ├── artifacts/
-│   ├── api-server/         # Express API server (content, genres, watchlist routes)
+│   ├── api-server/         # Go API server (chi router, content, genres, watchlist routes)
 │   └── blasce/             # Blasce frontend (React + Vite, dark streaming UI)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
@@ -39,7 +39,7 @@ artifacts-monorepo/
 
 ## Blasce Features
 
-- **Homepage**: Rotating hero banner with featured content, trending now carousel, genre rows
+- **Homepage**: Rotating hero banner with featured content (IMDB + RT score badges, runtime/seasons), Trending Now, Top Rated, New Releases carousels, curated genre rows
 - **Browse page**: Filter by type (movie/TV), genre, search bar, full grid
 - **Detail page**: Cinematic backdrop, trailer embed, cast grid, episode list (TV shows by season), watchlist button
 - **Watchlist page**: Saved content grid, remove items
@@ -54,22 +54,30 @@ artifacts-monorepo/
 - `episodes` — TV episodes per season
 - `watchlist` — user-session watchlist entries
 
-## Re-seeding
+## Content Library
 
-```bash
-pnpm --filter @workspace/scripts run seed
-```
+36 titles in the database (do NOT rerun seed — it truncates everything). Add new content via direct SQL INSERT.
+Scores are sourced from IMDB's public dataset and Rotten Tomatoes. The scraper is at `scripts/src/scrape.py`.
 
-## API Routes
+## API Routes (Go)
 
 - `GET /api/content` — list with filters: ?type, ?genre, ?search, ?featured, ?limit, ?offset
 - `GET /api/content/:id` — full detail with cast + episodes
 - `GET /api/content/featured/hero` — random featured item
 - `GET /api/content/trending/now` — trending items
+- `GET /api/content/top-rated` — sorted by IMDB score desc
+- `GET /api/content/new-releases` — sorted by release year desc
 - `GET /api/genres` — all genres
 - `GET /api/watchlist?sessionId=` — user watchlist
 - `POST /api/watchlist` — add to watchlist
 - `DELETE /api/watchlist/:contentId?sessionId=` — remove from watchlist
+
+## Critical Notes
+
+- Go `cast` SQL table must be quoted as `"cast"` (reserved keyword in PostgreSQL)
+- `rt_score` column is in content table (integer, nullable)
+- Watchlist is anonymous, uses UUID session ID in localStorage
+- Genre IDs: action=1, adventure=2, animation=3, comedy=4, crime=5, documentary=6, drama=7, fantasy=8, horror=9, mystery=10, romance=11, sci-fi=12, thriller=13, western=14
 
 ## TypeScript & Composite Projects
 

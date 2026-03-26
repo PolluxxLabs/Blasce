@@ -467,6 +467,144 @@ export function useGetTrending<
 }
 
 /**
+ * @summary Get top-rated content by IMDB score
+ */
+export const getGetTopRatedUrl = (params?: GetTrendingParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0
+    ? `/api/content/top-rated?${stringifiedParams}`
+    : `/api/content/top-rated`;
+};
+
+export const getTopRated = async (
+  params?: GetTrendingParams,
+  options?: RequestInit,
+): Promise<ContentListResponse> => {
+  return customFetch<ContentListResponse>(getGetTopRatedUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTopRatedQueryKey = (params?: GetTrendingParams) => {
+  return [`/api/content/top-rated`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetTopRatedQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTopRated>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTrendingParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getTopRated>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetTopRatedQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTopRated>>> = ({ signal }) =>
+    getTopRated(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTopRated>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTopRatedQueryResult = NonNullable<Awaited<ReturnType<typeof getTopRated>>>;
+export type GetTopRatedQueryError = ErrorType<unknown>;
+
+export function useGetTopRated<
+  TData = Awaited<ReturnType<typeof getTopRated>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTrendingParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getTopRated>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTopRatedQueryOptions(params, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get new releases sorted by year
+ */
+export const getGetNewReleasesUrl = (params?: GetTrendingParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0
+    ? `/api/content/new-releases?${stringifiedParams}`
+    : `/api/content/new-releases`;
+};
+
+export const getNewReleases = async (
+  params?: GetTrendingParams,
+  options?: RequestInit,
+): Promise<ContentListResponse> => {
+  return customFetch<ContentListResponse>(getGetNewReleasesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNewReleasesQueryKey = (params?: GetTrendingParams) => {
+  return [`/api/content/new-releases`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetNewReleasesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNewReleases>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTrendingParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getNewReleases>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetNewReleasesQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getNewReleases>>> = ({ signal }) =>
+    getNewReleases(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNewReleases>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNewReleasesQueryResult = NonNullable<Awaited<ReturnType<typeof getNewReleases>>>;
+export type GetNewReleasesQueryError = ErrorType<unknown>;
+
+export function useGetNewReleases<
+  TData = Awaited<ReturnType<typeof getNewReleases>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTrendingParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getNewReleases>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNewReleasesQueryOptions(params, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary List all genres
  */
 export const getListGenresUrl = () => {

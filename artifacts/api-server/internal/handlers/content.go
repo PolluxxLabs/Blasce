@@ -12,6 +12,104 @@ import (
         "github.com/go-chi/chi/v5"
 )
 
+func GetTopRated(w http.ResponseWriter, r *http.Request) {
+        limitStr := r.URL.Query().Get("limit")
+        limit := 12
+        if limitStr != "" {
+                if n, err := strconv.Atoi(limitStr); err == nil && n > 0 {
+                        limit = n
+                }
+        }
+        contentType := r.URL.Query().Get("type")
+
+        var args []any
+        argIdx := 1
+        where := ""
+        if contentType == "movie" || contentType == "tv" {
+                where = fmt.Sprintf("WHERE type = $%d", argIdx)
+                args = append(args, contentType)
+                argIdx++
+        }
+        args = append(args, limit)
+
+        query := fmt.Sprintf(`SELECT %s FROM content %s ORDER BY imdb_score DESC NULLS LAST, id ASC LIMIT $%d`,
+                contentSelectCols, where, argIdx)
+        rows, err := db.DB.Query(query, args...)
+        if err != nil {
+                writeError(w, http.StatusInternalServerError, err.Error())
+                return
+        }
+        defer rows.Close()
+
+        var items []models.Content
+        for rows.Next() {
+                c, err := scanContent(rows)
+                if err != nil {
+                        writeError(w, http.StatusInternalServerError, err.Error())
+                        return
+                }
+                c, err = enrichContent(c)
+                if err != nil {
+                        writeError(w, http.StatusInternalServerError, err.Error())
+                        return
+                }
+                items = append(items, c)
+        }
+        if items == nil {
+                items = []models.Content{}
+        }
+        jsonResponse(w, http.StatusOK, models.ContentListResponse{Items: items, Total: len(items)})
+}
+
+func GetNewReleases(w http.ResponseWriter, r *http.Request) {
+        limitStr := r.URL.Query().Get("limit")
+        limit := 12
+        if limitStr != "" {
+                if n, err := strconv.Atoi(limitStr); err == nil && n > 0 {
+                        limit = n
+                }
+        }
+        contentType := r.URL.Query().Get("type")
+
+        var args []any
+        argIdx := 1
+        where := ""
+        if contentType == "movie" || contentType == "tv" {
+                where = fmt.Sprintf("WHERE type = $%d", argIdx)
+                args = append(args, contentType)
+                argIdx++
+        }
+        args = append(args, limit)
+
+        query := fmt.Sprintf(`SELECT %s FROM content %s ORDER BY release_year DESC, id ASC LIMIT $%d`,
+                contentSelectCols, where, argIdx)
+        rows, err := db.DB.Query(query, args...)
+        if err != nil {
+                writeError(w, http.StatusInternalServerError, err.Error())
+                return
+        }
+        defer rows.Close()
+
+        var items []models.Content
+        for rows.Next() {
+                c, err := scanContent(rows)
+                if err != nil {
+                        writeError(w, http.StatusInternalServerError, err.Error())
+                        return
+                }
+                c, err = enrichContent(c)
+                if err != nil {
+                        writeError(w, http.StatusInternalServerError, err.Error())
+                        return
+                }
+                items = append(items, c)
+        }
+        if items == nil {
+                items = []models.Content{}
+        }
+        jsonResponse(w, http.StatusOK, models.ContentListResponse{Items: items, Total: len(items)})
+}
+
 func GetFeaturedHero(w http.ResponseWriter, r *http.Request) {
         query := fmt.Sprintf(`SELECT %s FROM content WHERE featured = true ORDER BY RANDOM() LIMIT 1`, contentSelectCols)
         row := db.DB.QueryRow(query)
