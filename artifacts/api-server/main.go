@@ -63,6 +63,10 @@ func main() {
                         r.Post("/", handlers.AddToWatchlist)
                         r.Delete("/{contentId}", handlers.RemoveFromWatchlist)
                 })
+
+                // Ad-free stream proxy
+                r.Get("/stream-proxy", handlers.StreamProxy)
+                r.Get("/cn-proxy", handlers.CnProxy)
         })
 
         addr := fmt.Sprintf(":%s", port)

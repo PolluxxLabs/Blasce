@@ -1,11 +1,5 @@
-import { X, ExternalLink, ChevronDown, RefreshCw, Tv } from "lucide-react";
+import { X, ChevronDown, RefreshCw, Tv } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-
-interface Source {
-  id: string;
-  label: string;
-  getUrl: (params: SourceParams) => string;
-}
 
 interface SourceParams {
   imdbId: string;
@@ -14,26 +8,28 @@ interface SourceParams {
   episode?: number;
 }
 
+interface Source {
+  id: string;
+  label: string;
+  getUrl: (params: SourceParams) => string;
+}
+
+const API_BASE = "/api";
+
 const SOURCES: Source[] = [
   {
-    id: "vidsrc-to",
+    id: "proxy",
     label: "Source 1",
-    getUrl: ({ imdbId, type, season, episode }) =>
-      type === "tv"
-        ? `https://vidsrc.to/embed/tv/${imdbId}/${season ?? 1}/${episode ?? 1}`
-        : `https://vidsrc.to/embed/movie/${imdbId}`,
-  },
-  {
-    id: "vidsrc-xyz",
-    label: "Source 2",
-    getUrl: ({ imdbId, type, season, episode }) =>
-      type === "tv"
-        ? `https://vidsrc.xyz/embed/tv?imdb=${imdbId}&season=${season ?? 1}&episode=${episode ?? 1}`
-        : `https://vidsrc.xyz/embed/movie?imdb=${imdbId}`,
+    getUrl: ({ imdbId, type, season, episode }) => {
+      const base = `${API_BASE}/stream-proxy?imdb=${imdbId}&type=${type}`;
+      return type === "tv"
+        ? `${base}&s=${season ?? 1}&e=${episode ?? 1}`
+        : base;
+    },
   },
   {
     id: "2embed",
-    label: "Source 3",
+    label: "Source 2",
     getUrl: ({ imdbId, type, season, episode }) =>
       type === "tv"
         ? `https://www.2embed.cc/embedtv/${imdbId}&s=${season ?? 1}&e=${episode ?? 1}`
@@ -41,7 +37,7 @@ const SOURCES: Source[] = [
   },
   {
     id: "vidsrc-me",
-    label: "Source 4",
+    label: "Source 3",
     getUrl: ({ imdbId, type, season, episode }) =>
       type === "tv"
         ? `https://vidsrc.me/embed/tv?imdb=${imdbId}&season=${season ?? 1}&episode=${episode ?? 1}`
@@ -143,12 +139,12 @@ export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: 
                         : "text-white/65 hover:bg-white/6 hover:text-white"
                     }`}
                   >
-                    {src.label}
+                    {src.id === "proxy" ? `${src.label} ✦` : src.label}
                   </button>
                 ))}
                 <div className="border-t border-white/8 px-4 py-2.5">
                   <p className="text-white/30 text-[10px] leading-tight">
-                    Try another if one fails
+                    Source 1 is ad-free
                   </p>
                 </div>
               </div>
@@ -162,16 +158,6 @@ export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: 
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-
-          <a
-            href={embedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/8 transition-colors"
-            title="Open in new tab"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
 
           <button
             onClick={onClose}
@@ -192,14 +178,13 @@ export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: 
           className="w-full h-full border-0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
-          referrerPolicy="no-referrer"
         />
       </div>
 
       {/* Footer */}
       <div className="px-4 py-2 bg-black/60 border-t border-white/5 flex items-center justify-between">
         <p className="text-white/20 text-[11px]">
-          If the player shows an error, switch to another source above
+          Source 1 is ad-free · Switch source if one fails
         </p>
         <p className="text-white/15 text-[11px]">Esc to close</p>
       </div>
