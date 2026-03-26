@@ -76,6 +76,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "hls.js": "^1.6.15",
     "uuid": "^13.0.0"
   }
 }

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp, Globe, Users, DollarSign, Film } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FullPageLoader } from "@/components/ui/LoadingSpinner";
 import { StreamPlayer } from "@/components/content/StreamPlayer";
 import { formatDuration } from "@/lib/utils";
 import {
   getMovie, getTv, getSeason,
-  tmdbPoster, tmdbBackdrop,
+  tmdbPoster, tmdbBackdrop, getDirectors, getWriters, formatBudget,
   type TMDBMovie, type TMDBTv, type TMDBEpisode,
 } from "@/lib/tmdb";
 
@@ -132,19 +132,35 @@ function WatchMovie({ id }: { id: number }) {
   const backdrop = tmdbBackdrop(movie.backdrop_path);
   const year = movie.release_date?.slice(0, 4);
   const canStream = !!movie.imdb_id;
+  const directors = getDirectors(movie.credits?.crew ?? []);
+  const writers = getWriters(movie.credits?.crew ?? []);
+  const budget = formatBudget(movie.budget);
+  const revenue = formatBudget(movie.revenue);
+  const keywords = movie.keywords?.keywords?.slice(0, 10) ?? [];
+  const lang = movie.original_language ? movie.original_language.toUpperCase() : null;
+  const country = movie.production_countries?.[0]?.name ?? null;
 
   return (
     <WatchLayout
       title={movie.title}
+      tagline={movie.tagline}
       poster={poster}
       backdrop={backdrop}
       year={year}
       score={movie.vote_average}
+      voteCount={movie.vote_count}
       duration={movie.runtime}
       genres={movie.genres.map(g => g.name)}
       overview={movie.overview}
       cast={movie.credits?.cast?.slice(0, 12)}
       canStream={canStream}
+      directors={directors}
+      writers={writers}
+      budget={budget}
+      revenue={revenue}
+      keywords={keywords}
+      language={lang}
+      country={country}
       watchButton={
         canStream ? (
           <button
@@ -188,6 +204,10 @@ function WatchTv({ id }: { id: number }) {
   const backdrop = tmdbBackdrop(tv.backdrop_path);
   const year = tv.first_air_date?.slice(0, 4);
   const canStream = !!tv.imdb_id;
+  const creators = (tv.created_by ?? []).map(c => c.name);
+  const network = tv.networks?.[0]?.name ?? null;
+  const keywords = tv.keywords?.results?.slice(0, 10) ?? [];
+  const lang = tv.original_language ? tv.original_language.toUpperCase() : null;
 
   const onPlay = (season: number, episode: number) => {
     setPlayerSeason(season);
@@ -201,16 +221,23 @@ function WatchTv({ id }: { id: number }) {
   return (
     <WatchLayout
       title={tv.name}
+      tagline={tv.tagline}
       poster={poster}
       backdrop={backdrop}
       year={year}
       score={tv.vote_average}
+      voteCount={tv.vote_count}
       seasons={tv.number_of_seasons}
       totalEpisodes={tv.number_of_episodes}
       genres={tv.genres.map(g => g.name)}
       overview={tv.overview}
       cast={tv.credits?.cast?.slice(0, 12)}
       canStream={canStream}
+      directors={creators.length > 0 ? creators : undefined}
+      directorsLabel={creators.length > 0 ? "Creator" : undefined}
+      network={network}
+      keywords={keywords}
+      language={lang}
       isTv
       watchButton={
         canStream ? (
@@ -265,10 +292,12 @@ function NotFoundState() {
 
 interface WatchLayoutProps {
   title: string;
+  tagline?: string;
   poster: string | null;
   backdrop: string | null;
   year?: string;
   score?: number;
+  voteCount?: number;
   duration?: number | null;
   seasons?: number;
   totalEpisodes?: number;
@@ -277,6 +306,15 @@ interface WatchLayoutProps {
   cast?: { id: number; name: string; character: string; profile_path?: string | null }[];
   canStream: boolean;
   isTv?: boolean;
+  directors?: string[];
+  directorsLabel?: string;
+  writers?: string[];
+  budget?: string | null;
+  revenue?: string | null;
+  network?: string | null;
+  keywords?: { id: number; name: string }[];
+  language?: string | null;
+  country?: string | null;
   watchButton: React.ReactNode;
   tabs?: Array<"overview" | "cast" | "episodes">;
   activeTab?: "overview" | "cast" | "episodes";
@@ -286,8 +324,10 @@ interface WatchLayoutProps {
 }
 
 function WatchLayout({
-  title, poster, backdrop, year, score, duration, seasons, totalEpisodes,
+  title, tagline, poster, backdrop, year, score, voteCount, duration, seasons, totalEpisodes,
   genres, overview, cast, isTv, watchButton,
+  directors, directorsLabel = "Director", writers, budget, revenue,
+  network, keywords, language, country,
   tabs = ["overview", "cast"],
   activeTab: externalTab,
   onTabChange,
@@ -341,16 +381,22 @@ function WatchLayout({
                 ))}
               </div>
 
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black text-white mb-4 leading-tight drop-shadow-lg">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black text-white mb-2 leading-tight drop-shadow-lg">
                 {title}
               </h1>
+
+              {tagline && (
+                <p className="text-white/40 italic text-base mb-3 font-light">"{tagline}"</p>
+              )}
 
               <div className="flex flex-wrap items-center gap-3 mb-7">
                 {score != null && score > 0 && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/25 rounded-lg">
                     <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
                     <span className="text-yellow-400 font-bold text-sm">{score.toFixed(1)}</span>
-                    <span className="text-white/35 text-xs">TMDB</span>
+                    {voteCount && voteCount > 0 && (
+                      <span className="text-white/30 text-xs">({(voteCount / 1000).toFixed(0)}K)</span>
+                    )}
                   </div>
                 )}
                 {year && (
@@ -370,6 +416,12 @@ function WatchLayout({
                     <Tv className="w-4 h-4" />
                     {seasons} Season{seasons !== 1 ? "s" : ""}
                     {totalEpisodes ? ` · ${totalEpisodes} eps` : ""}
+                  </span>
+                )}
+                {directors && directors.length > 0 && (
+                  <span className="flex items-center gap-1.5 text-white/50 text-sm">
+                    <Film className="w-4 h-4" />
+                    {directors.join(", ")}
                   </span>
                 )}
               </div>
@@ -406,10 +458,25 @@ function WatchLayout({
           {activeTab === "overview" && (
             <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
-                <div className="lg:col-span-2">
-                  <h3 className="text-lg font-display font-bold text-white mb-4">Storyline</h3>
-                  <p className="text-white/65 leading-relaxed text-base max-w-3xl">{overview || "No description available."}</p>
+                <div className="lg:col-span-2 space-y-8">
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-white mb-4">Storyline</h3>
+                    <p className="text-white/65 leading-relaxed text-base max-w-3xl">{overview || "No description available."}</p>
+                  </div>
+                  {keywords && keywords.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-white/35 uppercase tracking-widest mb-3">Keywords</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {keywords.map(k => (
+                          <span key={k.id} className="px-2.5 py-1 bg-white/4 border border-white/6 rounded-lg text-white/55 text-xs hover:text-white/80 transition-colors cursor-default">
+                            {k.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <div className="p-6 rounded-2xl bg-white/3 border border-white/8">
                     <h4 className="font-display font-bold text-white mb-5 text-sm uppercase tracking-wider border-b border-white/8 pb-4">Details</h4>
@@ -422,6 +489,24 @@ function WatchLayout({
                               <span key={g} className="px-2.5 py-1 bg-white/6 rounded-lg text-white/80 text-xs border border-white/8">{g}</span>
                             ))}
                           </dd>
+                        </div>
+                      )}
+                      {directors && directors.length > 0 && (
+                        <div>
+                          <dt className="text-white/35 mb-1">{directorsLabel}{directors.length > 1 ? "s" : ""}</dt>
+                          <dd className="text-white/80">{directors.join(", ")}</dd>
+                        </div>
+                      )}
+                      {writers && writers.length > 0 && (
+                        <div>
+                          <dt className="text-white/35 mb-1">Writers</dt>
+                          <dd className="text-white/80">{writers.join(", ")}</dd>
+                        </div>
+                      )}
+                      {network && (
+                        <div className="flex justify-between">
+                          <dt className="text-white/35">Network</dt>
+                          <dd className="text-white/80">{network}</dd>
                         </div>
                       )}
                       {year && (
@@ -442,10 +527,36 @@ function WatchLayout({
                           <dd className="text-white/80">{seasons}</dd>
                         </div>
                       )}
-                      {score != null && score > 0 && (
+                      {language && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Language</dt>
+                          <dd className="text-white/80">{language}</dd>
+                        </div>
+                      )}
+                      {country && (
                         <div className="flex justify-between">
-                          <dt className="text-white/35">TMDB Score</dt>
-                          <dd className="text-yellow-400 font-bold">{score.toFixed(1)} / 10</dd>
+                          <dt className="text-white/35">Country</dt>
+                          <dd className="text-white/80">{country}</dd>
+                        </div>
+                      )}
+                      {score != null && score > 0 && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35 flex items-center gap-1.5"><Star className="w-3.5 h-3.5" /> Rating</dt>
+                          <dd className="text-yellow-400 font-bold">{score.toFixed(1)} / 10
+                            {voteCount && <span className="text-white/30 font-normal text-xs ml-1">({(voteCount / 1000).toFixed(0)}K votes)</span>}
+                          </dd>
+                        </div>
+                      )}
+                      {budget && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Budget</dt>
+                          <dd className="text-white/80">{budget}</dd>
+                        </div>
+                      )}
+                      {revenue && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Box Office</dt>
+                          <dd className="text-green-400 font-semibold">{revenue}</dd>
                         </div>
                       )}
                     </dl>
@@ -458,25 +569,28 @@ function WatchLayout({
           {activeTab === "cast" && (
             <motion.div key="cast" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               {cast && cast.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
-                  {cast.map(actor => (
-                    <div key={actor.id} className="group">
-                      <div className="aspect-square rounded-2xl overflow-hidden bg-secondary mb-3 relative">
-                        <img
-                          src={
-                            actor.profile_path
-                              ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                              : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(actor.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear`
-                          }
-                          alt={actor.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div>
+                  {/* Top billed */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 mb-10">
+                    {cast.slice(0, 12).map(actor => (
+                      <div key={actor.id} className="group">
+                        <div className="aspect-square rounded-2xl overflow-hidden bg-secondary mb-3 relative">
+                          <img
+                            src={
+                              actor.profile_path
+                                ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                                : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(actor.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear`
+                            }
+                            alt={actor.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+                        <h4 className="font-bold text-white text-sm line-clamp-1">{actor.name}</h4>
+                        <p className="text-xs text-primary/80 mt-0.5 line-clamp-1">{actor.character}</p>
                       </div>
-                      <h4 className="font-bold text-white text-sm line-clamp-1">{actor.name}</h4>
-                      <p className="text-xs text-primary/80 mt-0.5 line-clamp-1">{actor.character}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <p className="text-white/40 py-12 text-center">Cast information not available.</p>

@@ -42,6 +42,19 @@ export interface TMDBCast {
   profile_path?: string | null;
 }
 
+export interface TMDBCrew {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+  profile_path?: string | null;
+}
+
+export interface TMDBKeyword {
+  id: number;
+  name: string;
+}
+
 export interface TMDBEpisode {
   id: number;
   episode_number: number;
@@ -64,30 +77,46 @@ export interface TMDBSeason {
 export interface TMDBMovie {
   id: number;
   title: string;
+  tagline?: string;
   overview: string;
   poster_path?: string | null;
   backdrop_path?: string | null;
   release_date: string;
   vote_average: number;
+  vote_count?: number;
   runtime?: number | null;
+  budget?: number;
+  revenue?: number;
+  status?: string;
+  original_language?: string;
   genres: TMDBGenre[];
-  credits: { cast: TMDBCast[] };
+  credits: { cast: TMDBCast[]; crew: TMDBCrew[] };
+  keywords?: { keywords: TMDBKeyword[] };
   imdb_id?: string | null;
+  production_countries?: { iso_3166_1: string; name: string }[];
 }
 
 export interface TMDBTv {
   id: number;
   name: string;
+  tagline?: string;
   overview: string;
   poster_path?: string | null;
   backdrop_path?: string | null;
   first_air_date: string;
+  last_air_date?: string;
   vote_average: number;
+  vote_count?: number;
   number_of_seasons: number;
   number_of_episodes: number;
+  status?: string;
+  original_language?: string;
   seasons: TMDBSeason[];
   genres: TMDBGenre[];
-  credits: { cast: TMDBCast[] };
+  credits: { cast: TMDBCast[]; crew: TMDBCrew[] };
+  keywords?: { results: TMDBKeyword[] };
+  created_by?: { id: number; name: string; profile_path?: string | null }[];
+  networks?: { id: number; name: string; logo_path?: string | null }[];
   imdb_id?: string | null;
 }
 
@@ -95,6 +124,24 @@ export interface TMDBSeasonDetail {
   season_number: number;
   name: string;
   episodes: TMDBEpisode[];
+}
+
+export function getDirectors(crew: TMDBCrew[]): string[] {
+  return crew.filter(c => c.job === "Director").map(c => c.name);
+}
+
+export function getWriters(crew: TMDBCrew[]): string[] {
+  return crew
+    .filter(c => ["Writer", "Screenplay", "Story"].includes(c.job))
+    .slice(0, 3)
+    .map(c => c.name);
+}
+
+export function formatBudget(n: number | undefined): string | null {
+  if (!n || n === 0) return null;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(0)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n}`;
 }
 
 export async function searchTmdb(query: string): Promise<TMDBSearchResult[]> {
@@ -106,7 +153,7 @@ export async function searchTmdb(query: string): Promise<TMDBSearchResult[]> {
 
 export async function getMovie(id: number): Promise<TMDBMovie> {
   const [movie, ext] = await Promise.all([
-    get<TMDBMovie>(`/movie/${id}?append_to_response=credits`),
+    get<TMDBMovie>(`/movie/${id}?append_to_response=credits,keywords`),
     get<{ imdb_id?: string }>(`/movie/${id}/external_ids`),
   ]);
   return { ...movie, imdb_id: ext.imdb_id };
@@ -114,7 +161,7 @@ export async function getMovie(id: number): Promise<TMDBMovie> {
 
 export async function getTv(id: number): Promise<TMDBTv> {
   const [tv, ext] = await Promise.all([
-    get<TMDBTv>(`/tv/${id}?append_to_response=credits`),
+    get<TMDBTv>(`/tv/${id}?append_to_response=credits,keywords`),
     get<{ imdb_id?: string }>(`/tv/${id}/external_ids`),
   ]);
   const realSeasons = (tv.seasons ?? []).filter(s => s.season_number > 0);

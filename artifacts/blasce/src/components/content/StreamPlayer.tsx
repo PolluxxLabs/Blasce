@@ -1,5 +1,9 @@
-import { X, ChevronDown, RefreshCw, Tv } from "lucide-react";
+import { X, ChevronDown, RefreshCw, Tv, Zap } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { NativePlayer } from "./NativePlayer";
+
+const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+const API_BASE = BASE_URL ? `${BASE_URL}/api` : "/api";
 
 interface SourceParams {
   imdbId: string;
@@ -11,22 +15,12 @@ interface SourceParams {
 interface Source {
   id: string;
   label: string;
-  getUrl: (params: SourceParams) => string;
+  badge?: string;
+  native?: boolean;
+  getUrl?: (params: SourceParams) => string;
 }
 
-const API_BASE = "/api";
-
-const SOURCES: Source[] = [
-  {
-    id: "proxy",
-    label: "Source 1",
-    getUrl: ({ imdbId, type, season, episode }) => {
-      const base = `${API_BASE}/stream-proxy?imdb=${imdbId}&type=${type}`;
-      return type === "tv"
-        ? `${base}&s=${season ?? 1}&e=${episode ?? 1}`
-        : base;
-    },
-  },
+const IFRAME_SOURCES: Source[] = [
   {
     id: "2embed",
     label: "Source 2",
@@ -55,13 +49,15 @@ interface StreamPlayerProps {
 }
 
 export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: StreamPlayerProps) {
+  // 0 = native HLS player, 1..3 = iframe fallbacks
   const [sourceIndex, setSourceIndex] = useState(0);
   const [showSources, setShowSources] = useState(false);
-  const [key, setKey] = useState(0);
+  const [iframeKey, setIframeKey] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentSource = SOURCES[sourceIndex];
-  const embedUrl = currentSource.getUrl({ imdbId, type, season, episode });
+  const isNative = sourceIndex === 0;
+  const iframeSource = isNative ? null : IFRAME_SOURCES[sourceIndex - 1];
+  const iframeUrl = iframeSource?.getUrl?.({ imdbId, type, season, episode }) ?? "";
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -87,16 +83,22 @@ export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: 
 
   const switchSource = (idx: number) => {
     setSourceIndex(idx);
-    setKey(k => k + 1);
+    setIframeKey(k => k + 1);
     setShowSources(false);
   };
 
-  const reload = () => setKey(k => k + 1);
+  const reload = () => setIframeKey(k => k + 1);
 
   const episodeLabel =
     type === "tv" && season != null && episode != null
       ? ` · S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`
       : "";
+
+  const allSources = [
+    { id: "native", label: "Source 1", badge: "Best", native: true },
+    ...IFRAME_SOURCES,
+  ];
+  const currentLabel = allSources[sourceIndex]?.label ?? "Source 1";
 
   return (
     <div
@@ -122,42 +124,50 @@ export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: 
               onClick={() => setShowSources(s => !s)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/8 transition-colors text-xs font-medium"
             >
-              {currentSource.label}
-              <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform duration-150 ${showSources ? "rotate-180" : ""}`}
-              />
+              {currentLabel}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${showSources ? "rotate-180" : ""}`} />
             </button>
             {showSources && (
-              <div className="absolute right-0 top-full mt-1.5 bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 min-w-[130px]">
-                {SOURCES.map((src, idx) => (
+              <div className="absolute right-0 top-full mt-1.5 bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 min-w-[145px]">
+                {allSources.map((src, idx) => (
                   <button
                     key={src.id}
                     onClick={() => switchSource(idx)}
-                    className={`w-full text-left px-4 py-2.5 text-xs transition-colors ${
+                    className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
                       idx === sourceIndex
                         ? "bg-primary/15 text-primary font-bold"
                         : "text-white/65 hover:bg-white/6 hover:text-white"
                     }`}
                   >
-                    {src.id === "proxy" ? `${src.label} ✦` : src.label}
+                    <span>{src.label}</span>
+                    {src.badge && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                        src.badge === "Best"
+                          ? "bg-primary/20 text-primary"
+                          : "bg-green-500/20 text-green-400"
+                      }`}>
+                        {src.badge === "Best" ? <Zap className="w-2.5 h-2.5 inline" /> : null}
+                        {" "}{src.badge}
+                      </span>
+                    )}
                   </button>
                 ))}
-                <div className="border-t border-white/8 px-4 py-2.5">
-                  <p className="text-white/30 text-[10px] leading-tight">
-                    Source 1 is ad-free
-                  </p>
+                <div className="border-t border-white/8 px-4 py-2 text-white/25 text-[10px]">
+                  Source 1 = native HLS · Ad-free
                 </div>
               </div>
             )}
           </div>
 
-          <button
-            onClick={reload}
-            className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/8 transition-colors"
-            title="Reload"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          {!isNative && (
+            <button
+              onClick={reload}
+              className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+              title="Reload"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          )}
 
           <button
             onClick={onClose}
@@ -169,22 +179,39 @@ export function StreamPlayer({ imdbId, title, type, season, episode, onClose }: 
         </div>
       </div>
 
-      {/* Player */}
-      <div className="flex-1 relative bg-black">
-        <iframe
-          key={key}
-          src={embedUrl}
-          title={title}
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-        />
+      {/* Player area */}
+      <div className="flex-1 relative bg-black flex items-center justify-center">
+        {isNative ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full max-h-full" style={{ aspectRatio: "16/9", maxHeight: "100%" }}>
+              <NativePlayer
+                imdbId={imdbId}
+                title={title}
+                type={type}
+                season={season}
+                episode={episode}
+                onFallback={() => switchSource(1)}
+              />
+            </div>
+          </div>
+        ) : (
+          <iframe
+            key={iframeKey}
+            src={iframeUrl}
+            title={title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+        )}
       </div>
 
       {/* Footer */}
       <div className="px-4 py-2 bg-black/60 border-t border-white/5 flex items-center justify-between">
         <p className="text-white/20 text-[11px]">
-          Source 1 is ad-free · Switch source if one fails
+          {isNative
+            ? "Ad-free stream · Quality selector &amp; download URL available when direct stream loads"
+            : "Backup source · Switch if video fails to load"}
         </p>
         <p className="text-white/15 text-[11px]">Esc to close</p>
       </div>
