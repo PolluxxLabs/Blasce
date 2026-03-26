@@ -66,7 +66,7 @@ function HeroContent({ item }: { item: Content }) {
           </span>
         ) : (
           <span className="px-3 py-1 bg-primary/20 text-primary border border-primary/30 rounded-full text-xs font-bold tracking-wider uppercase backdrop-blur-md">
-            Film
+            Movie
           </span>
         )}
         {item.rating && (

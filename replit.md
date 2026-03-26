@@ -62,12 +62,14 @@ artifacts-monorepo/
 
 ## Content Library
 
-34 titles in the database (all unique, no duplicates). Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
+40 titles in the database (all unique, no duplicates). Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
 Stream URLs sourced from moviebox.ph (5 confirmed: IDs 5, 7, 11, 12, 13).
-All 34 titles have RT scores, IMDB scores, trailer YouTube IDs, and correct MPAA/TV ratings.
+All titles have RT scores, IMDB scores, trailer YouTube IDs, and correct MPAA/TV ratings.
 Horror genre: Get Out (41), Hereditary (42), A Quiet Place (43) + Stranger Things, Wednesday.
 Fantasy genre: Game of Thrones, House of the Dragon, Stranger Things, Wednesday, Spirited Away, Encanto.
-TV shows (11 total): Breaking Bad, Stranger Things, The Last of Us, House of the Dragon, The Bear, Succession, Wednesday, Black Mirror, Game of Thrones, The Crown, Ted Lasso.
+TV shows (14 total): Breaking Bad, Stranger Things, The Last of Us, House of the Dragon, The Bear, Succession, Wednesday, Black Mirror, Game of Thrones, The Crown, Ted Lasso, Ozark (47), The Office (48), Fleabag (49).
+New movies added: The Silence of the Lambs (44), The Departed (45), Blade Runner 2049 (46).
+Next insert IDs start at 50.
 
 ## API Routes (Go)
 
