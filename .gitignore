@@ -47,3 +47,12 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Environment variables — never commit real secrets
+.env
+.env.local
+.env.*.local
+
+# Go build artifacts
+artifacts/api-server/blasce-api
+artifacts/api-server/dist/
