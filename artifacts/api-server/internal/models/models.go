@@ -53,7 +53,7 @@ type Genre struct {
 type WatchlistItem struct {
         ID        int    `json:"id"`
         ContentID int    `json:"contentId"`
-        SessionID string `json:"sessionId"`
+        UserID    string `json:"userId"`
         AddedAt   string `json:"addedAt"`
 }
 

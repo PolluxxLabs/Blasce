@@ -2,6 +2,7 @@ package handlers
 
 import (
         "blasce-api/internal/db"
+        "blasce-api/internal/middleware"
         "blasce-api/internal/models"
         "encoding/json"
         "net/http"
@@ -11,11 +12,7 @@ import (
 )
 
 func GetWatchlist(w http.ResponseWriter, r *http.Request) {
-        sessionID := r.URL.Query().Get("sessionId")
-        if sessionID == "" {
-                writeError(w, http.StatusBadRequest, "sessionId is required")
-                return
-        }
+        userID := middleware.GetUserID(r.Context())
 
         rows, err := db.DB.Query(`
                 SELECT c.id, c.title, c.type, c.description,
@@ -25,9 +22,9 @@ func GetWatchlist(w http.ResponseWriter, r *http.Request) {
                        c.seasons, c.total_episodes
                 FROM content c
                 INNER JOIN watchlist wl ON wl.content_id = c.id
-                WHERE wl.session_id = $1
+                WHERE wl.user_id = $1
                 ORDER BY wl.added_at ASC
-        `, sessionID)
+        `, userID)
         if err != nil {
                 writeError(w, http.StatusInternalServerError, err.Error())
                 return
@@ -56,27 +53,27 @@ func GetWatchlist(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddToWatchlist(w http.ResponseWriter, r *http.Request) {
+        userID := middleware.GetUserID(r.Context())
+
         var body struct {
-                ContentID int    `json:"contentId"`
-                SessionID string `json:"sessionId"`
+                ContentID int `json:"contentId"`
         }
         if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
                 writeError(w, http.StatusBadRequest, "Invalid request body")
                 return
         }
-        if body.ContentID == 0 || body.SessionID == "" {
-                writeError(w, http.StatusBadRequest, "contentId and sessionId are required")
+        if body.ContentID == 0 {
+                writeError(w, http.StatusBadRequest, "contentId is required")
                 return
         }
 
         var existing models.WatchlistItem
         err := db.DB.QueryRow(`
-                SELECT id, content_id, session_id, added_at FROM watchlist
-                WHERE content_id = $1 AND session_id = $2
-        `, body.ContentID, body.SessionID).Scan(
-                &existing.ID, &existing.ContentID, &existing.SessionID, &existing.AddedAt,
+                SELECT id, content_id, user_id, added_at FROM watchlist
+                WHERE content_id = $1 AND user_id = $2
+        `, body.ContentID, userID).Scan(
+                &existing.ID, &existing.ContentID, &existing.UserID, &existing.AddedAt,
         )
-
         if err == nil {
                 jsonResponse(w, http.StatusOK, existing)
                 return
@@ -84,11 +81,11 @@ func AddToWatchlist(w http.ResponseWriter, r *http.Request) {
 
         var item models.WatchlistItem
         err = db.DB.QueryRow(`
-                INSERT INTO watchlist (content_id, session_id)
+                INSERT INTO watchlist (content_id, user_id)
                 VALUES ($1, $2)
-                RETURNING id, content_id, session_id, added_at
-        `, body.ContentID, body.SessionID).Scan(
-                &item.ID, &item.ContentID, &item.SessionID, &item.AddedAt,
+                RETURNING id, content_id, user_id, added_at
+        `, body.ContentID, userID).Scan(
+                &item.ID, &item.ContentID, &item.UserID, &item.AddedAt,
         )
         if err != nil {
                 writeError(w, http.StatusInternalServerError, err.Error())
@@ -99,6 +96,8 @@ func AddToWatchlist(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveFromWatchlist(w http.ResponseWriter, r *http.Request) {
+        userID := middleware.GetUserID(r.Context())
+
         contentIDStr := chi.URLParam(r, "contentId")
         contentID, err := strconv.Atoi(contentIDStr)
         if err != nil {
@@ -106,13 +105,7 @@ func RemoveFromWatchlist(w http.ResponseWriter, r *http.Request) {
                 return
         }
 
-        sessionID := r.URL.Query().Get("sessionId")
-        if sessionID == "" {
-                writeError(w, http.StatusBadRequest, "sessionId is required")
-                return
-        }
-
-        _, err = db.DB.Exec(`DELETE FROM watchlist WHERE content_id = $1 AND session_id = $2`, contentID, sessionID)
+        _, err = db.DB.Exec(`DELETE FROM watchlist WHERE content_id = $1 AND user_id = $2`, contentID, userID)
         if err != nil {
                 writeError(w, http.StatusInternalServerError, err.Error())
                 return
