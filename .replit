@@ -39,8 +39,8 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=20161 BASE_PATH=/ pnpm --filter @workspace/blasce run dev"
-waitForPort = 20161
+args = "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/blasce run dev"
+waitForPort = 5173
 
 [[workflows.workflow]]
 name = "API Server"

@@ -4,8 +4,6 @@ import { Play, Info, Star, TrendingUp, ChevronLeft, ChevronRight } from "lucide-
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useGetTrending,
-  useGetTopRated,
-  useGetNewReleases,
   useListContent,
   type Content,
 } from "@workspace/api-client-react";
@@ -233,8 +231,8 @@ function HeroCarousel({ items }: { items: Content[] }) {
 // ── Main Page ──────────────────────────────────────────────────────────
 export default function Home() {
   const { data: trending, isLoading: trendingLoading } = useGetTrending({ limit: 15 });
-  const { data: topRated } = useGetTopRated({ limit: 12 });
-  const { data: newReleases } = useGetNewReleases({ limit: 12 });
+  const { data: topRated } = useListContent({ type: "movie", limit: 12 });
+  const { data: newReleases } = useListContent({ type: "tv", limit: 12 });
 
   // Hero items: first 6 trending items that have a backdrop
   const heroItems = trending?.items?.filter(i => i.backdropUrl).slice(0, 6) ?? [];
