@@ -63,6 +63,11 @@ export function ContentCard({ content, index = 0 }: ContentCardProps) {
                 <Star className="w-3 h-3 fill-current" />
                 {content.imdbScore?.toFixed(1) || "N/A"}
               </span>
+              {content.rtScore != null && (
+                <span className="flex items-center gap-1 text-red-400 font-semibold">
+                  🍅 {content.rtScore}%
+                </span>
+              )}
               <span className="truncate">{content.genres.slice(0, 2).join(" • ")}</span>
             </div>
           </div>

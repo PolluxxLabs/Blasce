@@ -51,6 +51,7 @@ export interface Content {
   releaseYear: number;
   rating: string;
   imdbScore?: number | null;
+  rtScore?: number | null;
   duration?: number | null;
   genres: string[];
   featured: boolean;

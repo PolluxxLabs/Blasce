@@ -20,7 +20,7 @@ func GetWatchlist(w http.ResponseWriter, r *http.Request) {
         rows, err := db.DB.Query(`
                 SELECT c.id, c.title, c.type, c.description,
                        c.poster_url, c.backdrop_url, c.trailer_url,
-                       c.release_year, c.rating, c.imdb_score, c.duration,
+                       c.release_year, c.rating, c.imdb_score, c.rt_score, c.duration,
                        c.featured, c.trending, c.trending_rank,
                        c.seasons, c.total_episodes
                 FROM content c

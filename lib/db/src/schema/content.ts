@@ -13,6 +13,7 @@ export const contentTable = pgTable("content", {
   releaseYear: integer("release_year").notNull(),
   rating: text("rating").notNull().default("PG-13"),
   imdbScore: real("imdb_score"),
+  rtScore: integer("rt_score"),
   duration: integer("duration"), // minutes for movies
   featured: boolean("featured").notNull().default(false),
   trending: boolean("trending").notNull().default(false),

@@ -78,8 +78,13 @@ export default function Detail() {
               <div className="flex flex-wrap items-center gap-4 text-sm md:text-base text-white/80 font-medium mb-8">
                 <span className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
                   <Star className="w-4 h-4 fill-current" />
-                  {content.imdbScore?.toFixed(1) || "N/A"}
+                  {content.imdbScore?.toFixed(1) || "N/A"} <span className="text-white/40 text-xs ml-0.5">IMDB</span>
                 </span>
+                {content.rtScore != null && (
+                  <span className="flex items-center gap-1.5 text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 font-semibold">
+                    🍅 {content.rtScore}% <span className="text-white/40 text-xs font-normal ml-0.5">RT</span>
+                  </span>
+                )}
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-white/50" />
                   {content.releaseYear}
