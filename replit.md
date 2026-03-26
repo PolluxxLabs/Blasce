@@ -39,7 +39,7 @@ artifacts-monorepo/
 
 ## Blasce Features
 
-- **Homepage**: Auto-rotating hero carousel (6 trending items, 9s crossfade, dot progress indicators, prev/next nav, pause-on-hover), Trending Now, Top Rated, New Releases carousels, curated genre rows (Drama, Crime, Sci-Fi, Comedy, Action, Horror, Animation)
+- **Homepage**: Auto-rotating hero carousel (6 trending items, 9s crossfade, dot progress indicators, prev/next nav, pause-on-hover), Trending Now, Top Rated, New Releases carousels, curated genre rows (Drama, Crime, Sci-Fi, Comedy, Action, Fantasy, Horror, Animation)
 - **Browse page**: Filter by type (movie/TV), genre chips, search bar, sort dropdown (Relevance/Newest/Oldest/Top Rated/A–Z), full responsive grid
 - **Detail page**: Cinematic backdrop, trailer embed, IMDB + RT score badges, cast grid, episode list (TV shows by season), watchlist button, Watch Now stream player
 - **Watchlist page**: Saved content grid, remove items (JWT-authenticated)
@@ -58,9 +58,12 @@ artifacts-monorepo/
 
 ## Content Library
 
-30 titles in the database (16 original seed + 14 added via SQL). Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
+34 titles in the database (all unique, no duplicates). Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
 Stream URLs sourced from moviebox.ph (5 confirmed: IDs 5, 7, 11, 12, 13).
-Genre assignments in `content_genres` table (146 rows total).
+All 34 titles have RT scores, IMDB scores, trailer YouTube IDs, and correct MPAA/TV ratings.
+Horror genre: Get Out (41), Hereditary (42), A Quiet Place (43) + Stranger Things, Wednesday.
+Fantasy genre: Game of Thrones, House of the Dragon, Stranger Things, Wednesday, Spirited Away, Encanto.
+TV shows (11 total): Breaking Bad, Stranger Things, The Last of Us, House of the Dragon, The Bear, Succession, Wednesday, Black Mirror, Game of Thrones, The Crown, Ted Lasso.
 
 ## API Routes (Go)
 

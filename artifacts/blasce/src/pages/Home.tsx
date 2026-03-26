@@ -282,6 +282,7 @@ export default function Home() {
         <GenreRow genreSlug="sci-fi" genreName="Sci-Fi" />
         <GenreRow genreSlug="comedy" genreName="Comedy" />
         <GenreRow genreSlug="action" genreName="Action & Adventure" />
+        <GenreRow genreSlug="fantasy" genreName="Fantasy & Epic" />
         <GenreRow genreSlug="horror" genreName="Horror & Suspense" />
         <GenreRow genreSlug="animation" genreName="Animation" />
       </div>
