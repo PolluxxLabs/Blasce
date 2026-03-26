@@ -85,6 +85,7 @@ Next insert IDs start at 50.
 - `POST /api/auth/login` — login {email, password} → {token, id, email, displayName, createdAt}
 - `GET /api/auth/me` — verify JWT, returns user info
 - `PUT /api/auth/me` — update profile {displayName?, password?} → {token, id, email, displayName, createdAt}
+- `GET /api/ratings?imdb=tt1375666` — real IMDB rating, RT %, Metacritic score + IMDB/RT URLs (via OMDb API, 24h server-side cache)
 - `GET /api/watchlist` — JWT-authenticated user watchlist
 - `POST /api/watchlist` — JWT-authenticated, add to watchlist
 - `DELETE /api/watchlist/:contentId` — JWT-authenticated, remove from watchlist

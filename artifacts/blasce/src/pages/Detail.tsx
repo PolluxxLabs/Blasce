@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
-import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGetContent, useListContent, type Episode, type CastMember, type Content } from "@workspace/api-client-react";
 import { FullPageLoader } from "@/components/ui/LoadingSpinner";
@@ -8,6 +8,7 @@ import { WatchlistButton } from "@/components/content/WatchlistButton";
 import { ContentCarousel } from "@/components/content/ContentCarousel";
 import { StreamPlayer } from "@/components/content/StreamPlayer";
 import { formatDuration } from "@/lib/utils";
+import { useRatings } from "@/hooks/useRatings";
 
 function TrailerEmbed({ videoId }: { videoId: string }) {
   const [playing, setPlaying] = useState(false);
@@ -130,6 +131,7 @@ export default function Detail() {
   const [playerEpisode, setPlayerEpisode] = useState<number | undefined>(undefined);
 
   const { data: content, isLoading, isError } = useGetContent(id);
+  const { data: ratings } = useRatings(content?.imdbId);
 
   const primaryGenre = content?.genres?.[0];
   const primaryGenreSlug = primaryGenre
@@ -225,20 +227,44 @@ export default function Detail() {
 
               {/* Scores + metadata */}
               <div className="flex flex-wrap items-center gap-3 mb-7">
-                {content.imdbScore != null && (
+                {/* Real IMDB rating */}
+                {(ratings?.imdbRating ?? 0) > 0 ? (
+                  <a href={ratings!.imdbUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/25 rounded-lg hover:bg-yellow-500/20 transition-colors group">
+                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-yellow-400 font-bold text-sm">{ratings!.imdbRating.toFixed(1)}</span>
+                    {ratings!.imdbVotes && <span className="text-white/30 text-xs">({ratings!.imdbVotes})</span>}
+                    <span className="text-white/35 text-xs">IMDB</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-white/20 group-hover:text-yellow-400/60" />
+                  </a>
+                ) : content.imdbScore != null && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/25 rounded-lg">
                     <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
                     <span className="text-yellow-400 font-bold text-sm">{content.imdbScore.toFixed(1)}</span>
                     <span className="text-white/35 text-xs">IMDB</span>
                   </div>
                 )}
-                {content.rtScore != null && (
+                {/* Real Rotten Tomatoes */}
+                {(ratings?.rtScore ?? 0) > 0 ? (
+                  <a href={ratings!.rtSearchUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors group">
+                    <span className="text-sm leading-none">🍅</span>
+                    <span className={`font-bold text-sm ${ratings!.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>{ratings!.rtScore}%</span>
+                    <span className="text-white/35 text-xs">RT</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-white/20 group-hover:text-red-400/60" />
+                  </a>
+                ) : content.rtScore != null && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/25 rounded-lg">
                     <span className="text-sm">🍅</span>
-                    <span className={`font-bold text-sm ${content.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
-                      {content.rtScore}%
-                    </span>
+                    <span className={`font-bold text-sm ${content.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>{content.rtScore}%</span>
                     <span className="text-white/35 text-xs">Rotten Tomatoes</span>
+                  </div>
+                )}
+                {/* Metacritic */}
+                {(ratings?.metacritic ?? 0) > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <span className={`font-bold text-sm ${ratings!.metacritic >= 61 ? "text-green-400" : ratings!.metacritic >= 40 ? "text-yellow-400" : "text-red-400"}`}>{ratings!.metacritic}</span>
+                    <span className="text-white/35 text-xs">Metacritic</span>
                   </div>
                 )}
                 <span className="flex items-center gap-1.5 text-white/50 text-sm">
@@ -386,17 +412,42 @@ export default function Detail() {
                           )}
                         </>
                       )}
-                      {content.imdbScore != null && (
+                      {(ratings?.imdbRating ?? 0) > 0 ? (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35">IMDB</dt>
+                          <dd>
+                            <a href={ratings!.imdbUrl} target="_blank" rel="noopener noreferrer" className="text-yellow-400 font-bold hover:underline">
+                              {ratings!.imdbRating.toFixed(1)} / 10
+                            </a>
+                            {ratings!.imdbVotes && <span className="text-white/30 font-normal text-xs ml-1">({ratings!.imdbVotes})</span>}
+                          </dd>
+                        </div>
+                      ) : content.imdbScore != null && (
                         <div className="flex justify-between">
                           <dt className="text-white/35">IMDB</dt>
                           <dd className="text-yellow-400 font-bold">{content.imdbScore.toFixed(1)} / 10</dd>
                         </div>
                       )}
-                      {content.rtScore != null && (
+                      {(ratings?.rtScore ?? 0) > 0 ? (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35">Tomatometer</dt>
+                          <dd>
+                            <a href={ratings!.rtSearchUrl} target="_blank" rel="noopener noreferrer" className={`font-bold hover:underline ${ratings!.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
+                              {ratings!.rtScore}%
+                            </a>
+                          </dd>
+                        </div>
+                      ) : content.rtScore != null && (
                         <div className="flex justify-between">
                           <dt className="text-white/35">Tomatometer</dt>
-                          <dd className={`font-bold ${content.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
-                            {content.rtScore}%
+                          <dd className={`font-bold ${content.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>{content.rtScore}%</dd>
+                        </div>
+                      )}
+                      {(ratings?.metacritic ?? 0) > 0 && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35">Metacritic</dt>
+                          <dd className={`font-bold ${ratings!.metacritic >= 61 ? "text-green-400" : ratings!.metacritic >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+                            {ratings!.metacritic} / 100
                           </dd>
                         </div>
                       )}

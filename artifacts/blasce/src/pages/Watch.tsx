@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp, Globe, Users, DollarSign, Film } from "lucide-react";
+import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp, Globe, DollarSign, Film, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FullPageLoader } from "@/components/ui/LoadingSpinner";
 import { StreamPlayer } from "@/components/content/StreamPlayer";
 import { formatDuration } from "@/lib/utils";
+import { useRatings } from "@/hooks/useRatings";
 import {
   getMovie, getTv, getSeason,
   tmdbPoster, tmdbBackdrop, getDirectors, getWriters, formatBudget,
@@ -154,6 +155,7 @@ function WatchMovie({ id }: { id: number }) {
       overview={movie.overview}
       cast={movie.credits?.cast?.slice(0, 12)}
       canStream={canStream}
+      imdbId={movie.imdb_id}
       directors={directors}
       writers={writers}
       budget={budget}
@@ -233,6 +235,7 @@ function WatchTv({ id }: { id: number }) {
       overview={tv.overview}
       cast={tv.credits?.cast?.slice(0, 12)}
       canStream={canStream}
+      imdbId={tv.imdb_id}
       directors={creators.length > 0 ? creators : undefined}
       directorsLabel={creators.length > 0 ? "Creator" : undefined}
       network={network}
@@ -315,6 +318,7 @@ interface WatchLayoutProps {
   keywords?: { id: number; name: string }[];
   language?: string | null;
   country?: string | null;
+  imdbId?: string | null;
   watchButton: React.ReactNode;
   tabs?: Array<"overview" | "cast" | "episodes">;
   activeTab?: "overview" | "cast" | "episodes";
@@ -325,7 +329,7 @@ interface WatchLayoutProps {
 
 function WatchLayout({
   title, tagline, poster, backdrop, year, score, voteCount, duration, seasons, totalEpisodes,
-  genres, overview, cast, isTv, watchButton,
+  genres, overview, cast, isTv, watchButton, imdbId,
   directors, directorsLabel = "Director", writers, budget, revenue,
   network, keywords, language, country,
   tabs = ["overview", "cast"],
@@ -334,6 +338,7 @@ function WatchLayout({
   episodePanel,
   children,
 }: WatchLayoutProps) {
+  const { data: ratings } = useRatings(imdbId);
   const [internalTab, setInternalTab] = useState<"overview" | "cast" | "episodes">("overview");
   const activeTab = externalTab ?? internalTab;
   const setTab = onTabChange ?? setInternalTab;
@@ -390,13 +395,50 @@ function WatchLayout({
               )}
 
               <div className="flex flex-wrap items-center gap-3 mb-7">
-                {score != null && score > 0 && (
+                {/* IMDB rating */}
+                {(ratings?.imdbRating ?? 0) > 0 ? (
+                  <a
+                    href={ratings!.imdbUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/25 rounded-lg hover:bg-yellow-500/20 transition-colors group"
+                  >
+                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-yellow-400 font-bold text-sm">{ratings!.imdbRating.toFixed(1)}</span>
+                    {ratings!.imdbVotes && <span className="text-white/30 text-xs">({ratings!.imdbVotes})</span>}
+                    <span className="text-white/35 text-xs">IMDB</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-white/20 group-hover:text-yellow-400/60 transition-colors" />
+                  </a>
+                ) : score != null && score > 0 ? (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/25 rounded-lg">
                     <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
                     <span className="text-yellow-400 font-bold text-sm">{score.toFixed(1)}</span>
-                    {voteCount && voteCount > 0 && (
-                      <span className="text-white/30 text-xs">({(voteCount / 1000).toFixed(0)}K)</span>
-                    )}
+                    {voteCount && voteCount > 0 && <span className="text-white/30 text-xs">({(voteCount / 1000).toFixed(0)}K)</span>}
+                  </div>
+                ) : null}
+                {/* Rotten Tomatoes */}
+                {(ratings?.rtScore ?? 0) > 0 && (
+                  <a
+                    href={ratings!.rtSearchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors group"
+                  >
+                    <span className="text-sm leading-none">🍅</span>
+                    <span className={`font-bold text-sm ${ratings!.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
+                      {ratings!.rtScore}%
+                    </span>
+                    <span className="text-white/35 text-xs">RT</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-white/20 group-hover:text-red-400/60 transition-colors" />
+                  </a>
+                )}
+                {/* Metacritic */}
+                {(ratings?.metacritic ?? 0) > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <span className={`font-bold text-sm ${ratings!.metacritic >= 61 ? "text-green-400" : ratings!.metacritic >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+                      {ratings!.metacritic}
+                    </span>
+                    <span className="text-white/35 text-xs">Metacritic</span>
                   </div>
                 )}
                 {year && (
@@ -539,7 +581,36 @@ function WatchLayout({
                           <dd className="text-white/80">{country}</dd>
                         </div>
                       )}
-                      {score != null && score > 0 && (
+                      {(ratings?.imdbRating ?? 0) > 0 && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35 flex items-center gap-1.5"><Star className="w-3.5 h-3.5" /> IMDB</dt>
+                          <dd>
+                            <a href={ratings!.imdbUrl} target="_blank" rel="noopener noreferrer" className="text-yellow-400 font-bold hover:underline">
+                              {ratings!.imdbRating.toFixed(1)} / 10
+                            </a>
+                            {ratings!.imdbVotes && <span className="text-white/30 font-normal text-xs ml-1">({ratings!.imdbVotes})</span>}
+                          </dd>
+                        </div>
+                      )}
+                      {(ratings?.rtScore ?? 0) > 0 && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35">🍅 Rotten Tomatoes</dt>
+                          <dd>
+                            <a href={ratings!.rtSearchUrl} target="_blank" rel="noopener noreferrer" className={`font-bold hover:underline ${ratings!.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
+                              {ratings!.rtScore}%
+                            </a>
+                          </dd>
+                        </div>
+                      )}
+                      {(ratings?.metacritic ?? 0) > 0 && (
+                        <div className="flex justify-between items-center">
+                          <dt className="text-white/35">Metacritic</dt>
+                          <dd className={`font-bold ${ratings!.metacritic >= 61 ? "text-green-400" : ratings!.metacritic >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+                            {ratings!.metacritic} / 100
+                          </dd>
+                        </div>
+                      )}
+                      {!(ratings?.imdbRating) && score != null && score > 0 && (
                         <div className="flex justify-between items-center">
                           <dt className="text-white/35 flex items-center gap-1.5"><Star className="w-3.5 h-3.5" /> Rating</dt>
                           <dd className="text-yellow-400 font-bold">{score.toFixed(1)} / 10
