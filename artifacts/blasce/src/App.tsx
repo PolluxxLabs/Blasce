@@ -1,0 +1,73 @@
+import { Switch, Route, Router as WouterRouter } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+// Layout
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+
+// Pages
+import Home from "@/pages/Home";
+import Browse from "@/pages/Browse";
+import Detail from "@/pages/Detail";
+import Watchlist from "@/pages/Watchlist";
+import NotFound from "@/pages/not-found";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/30">
+      <Navbar />
+      <main className="flex-grow w-full">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/">
+        <AppLayout><Home /></AppLayout>
+      </Route>
+      <Route path="/browse">
+        <AppLayout><Browse /></AppLayout>
+      </Route>
+      <Route path="/content/:id">
+        <AppLayout><Detail /></AppLayout>
+      </Route>
+      <Route path="/watchlist">
+        <AppLayout><Watchlist /></AppLayout>
+      </Route>
+      <Route>
+        <NotFound />
+      </Route>
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

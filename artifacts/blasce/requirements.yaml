@@ -1,0 +1,22 @@
+packages:
+  "framer-motion": "Smooth animations and complex UI transitions for premium feel"
+  "embla-carousel-react": "High performance carousel for content rows"
+  "lucide-react": "Icons for UI elements"
+  "uuid": "Generating anonymous session IDs for watchlist"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge tailwind classes"
+
+images:
+  - path: "artifacts/blasce/public/images/logo.png"
+    description: "Sleek, minimalist neon blue and purple geometric letter B logo for a premium cinematic streaming service called Blasce, transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/blasce/public/images/hero-bg.png"
+    description: "Dark cinematic abstract background with deep navy, black, and subtle neon purple glowing light leaks, atmospheric and moody"
+    aspect_ratio: "16:9"
+  - path: "artifacts/blasce/public/images/empty-state.png"
+    description: "Minimalist dark 3D illustration of an empty popcorn bucket and a movie clapperboard sitting in a moody blue spotlight"
+    aspect_ratio: "1:1"
+
+notes:
+  - "App uses session-based auth for watchlist via localStorage UUID"
+  - "Assuming @workspace/api-client-react provides all generated hooks"
