@@ -188,11 +188,7 @@ Requires `DATABASE_URL` in the environment.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a pull request
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions, branch naming conventions, commit message format, code style guidelines, and the pull request process.
 
 ---
 
