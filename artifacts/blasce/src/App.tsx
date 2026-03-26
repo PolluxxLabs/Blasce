@@ -15,7 +15,7 @@ import Detail from "@/pages/Detail";
 import Watchlist from "@/pages/Watchlist";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
-import NotFound from "@/pages/not-found";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {

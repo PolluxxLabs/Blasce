@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Search, X } from "lucide-react";
 import { useListContent, useListGenres, type ListContentType } from "@workspace/api-client-react";
 import { ContentCard } from "@/components/content/ContentCard";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { cn } from "@/lib/utils";
 
 export default function Browse() {
@@ -126,7 +126,7 @@ export default function Browse() {
         </div>
 
         {isLoading ? (
-          <LoadingSpinner className="py-32" />
+          <SkeletonGrid count={18} />
         ) : contentData?.items && contentData.items.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-5">
             {contentData.items.map((item, index) => (

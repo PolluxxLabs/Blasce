@@ -117,9 +117,12 @@ export default function Detail() {
   const { data: content, isLoading, isError } = useGetContent(id);
 
   const primaryGenre = content?.genres?.[0];
+  const primaryGenreSlug = primaryGenre
+    ? primaryGenre.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "")
+    : undefined;
   const { data: related } = useListContent(
-    { genre: primaryGenre, limit: 12 },
-    { query: { enabled: !!primaryGenre } }
+    { genre: primaryGenreSlug, limit: 12 },
+    { query: { enabled: !!primaryGenreSlug } }
   );
   const relatedItems = related?.items?.filter(i => i.id !== id) ?? [];
 
