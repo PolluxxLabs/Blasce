@@ -47,6 +47,8 @@ artifacts-monorepo/
 - **Profile/Account page** (`/profile`): Update display name, change password, sign out; "Account Settings" link in navbar dropdown
 - **Search overlay**: `"/"` keyboard shortcut opens search; shows Trending Now grid when idle; keyboard navigation with ↑↓ arrows, Enter to open, ESC to close; visual highlight on focused result; shows ↑↓/↵ hint in overlay
 - **Navbar**: Active state logic fixed — plain `/browse` no longer activates "TV Shows" link; uses URLSearchParams comparison for query-param–based nav links
+- **Browse URL params**: Type, genre, and sort filters are all readable from the URL on page load — direct links like `/browse?genre=horror&sort=rating` fully pre-populate all filters; "See All" links from Top Rated/New Releases use correct sort params
+- **Scroll-to-top**: Navigating between pages automatically scrolls back to the top (via ScrollToTop component in App.tsx)
 
 ## Database Schema
 

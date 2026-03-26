@@ -278,12 +278,12 @@ export default function Home() {
               <TrendingUp className="w-4 h-4 text-yellow-400" />
               <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Highest Rated</span>
             </div>
-            <ContentCarousel title="Top Rated" items={topRated.items} viewAllHref="/browse" />
+            <ContentCarousel title="Top Rated" items={topRated.items} viewAllHref="/browse?sort=rating" />
           </section>
         ) : null}
 
         {newReleases?.items?.length ? (
-          <ContentCarousel title="New Releases" items={newReleases.items} viewAllHref="/browse" />
+          <ContentCarousel title="New Releases" items={newReleases.items} viewAllHref="/browse?sort=newest" />
         ) : null}
 
         {/* Genre rows */}

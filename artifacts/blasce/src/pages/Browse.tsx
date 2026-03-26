@@ -11,11 +11,14 @@ export default function Browse() {
   const searchParams = new URLSearchParams(window.location.search);
   const initialType = searchParams.get("type") as ListContentType | null;
 
+  const initialGenre = searchParams.get("genre") ?? undefined;
+  const initialSort = (searchParams.get("sort") as ListContentSort) || undefined;
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [type, setType] = useState<ListContentType | undefined>(initialType || undefined);
-  const [genre, setGenre] = useState<string | undefined>(undefined);
-  const [sort, setSort] = useState<ListContentSort | undefined>(undefined);
+  const [genre, setGenre] = useState<string | undefined>(initialGenre);
+  const [sort, setSort] = useState<ListContentSort | undefined>(initialSort);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -24,11 +27,12 @@ export default function Browse() {
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    const t = p.get("type") as ListContentType | null;
-    if (t !== (type ?? null)) {
-      setType(t || undefined);
-      setGenre(undefined);
-    }
+    const t = (p.get("type") as ListContentType) || undefined;
+    const g = p.get("genre") ?? undefined;
+    const s = (p.get("sort") as ListContentSort) || undefined;
+    setType(t);
+    setGenre(g);
+    setSort(s);
   }, [location]);
 
   const { data: genresData } = useListGenres();
