@@ -6,6 +6,7 @@ import { useGetContent, useListContent } from "@workspace/api-client-react";
 import { FullPageLoader } from "@/components/ui/LoadingSpinner";
 import { WatchlistButton } from "@/components/content/WatchlistButton";
 import { ContentCarousel } from "@/components/content/ContentCarousel";
+import { StreamPlayer } from "@/components/content/StreamPlayer";
 import { formatDuration } from "@/lib/utils";
 
 function TrailerEmbed({ videoId }: { videoId: string }) {
@@ -113,6 +114,7 @@ export default function Detail() {
   const [, params] = useRoute("/content/:id");
   const id = params?.id ? parseInt(params.id, 10) : 0;
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "cast">("overview");
+  const [playerOpen, setPlayerOpen] = useState(false);
 
   const { data: content, isLoading, isError } = useGetContent(id);
 
@@ -236,12 +238,25 @@ export default function Detail() {
               </div>
 
               <div className="flex flex-wrap gap-3 items-center">
+                {content.streamUrl && (
+                  <button
+                    onClick={() => setPlayerOpen(true)}
+                    className="flex items-center gap-2.5 px-6 py-3 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/30"
+                  >
+                    <Play className="w-5 h-5 fill-current" />
+                    Watch Now
+                  </button>
+                )}
                 {content.trailerUrl && (
                   <button
                     onClick={() => {
                       document.getElementById("trailer-section")?.scrollIntoView({ behavior: "smooth" });
                     }}
-                    className="flex items-center gap-2.5 px-6 py-3 bg-white text-black rounded-xl font-bold text-base hover:bg-white/90 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                    className={`flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-base transition-all hover:scale-105 active:scale-95 shadow-xl ${
+                      content.streamUrl
+                        ? "bg-white/10 text-white hover:bg-white/20 border border-white/15"
+                        : "bg-white text-black hover:bg-white/90"
+                    }`}
                   >
                     <Play className="w-5 h-5 fill-current" />
                     Watch Trailer
@@ -400,6 +415,15 @@ export default function Detail() {
           </div>
         )}
       </div>
+
+      {/* ── Stream Player Modal ── */}
+      {playerOpen && content.streamUrl && (
+        <StreamPlayer
+          streamUrl={content.streamUrl}
+          title={content.title}
+          onClose={() => setPlayerOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -51,6 +51,7 @@ export const ListContentResponse = zod.object({
       trendingRank: zod.number().nullish(),
       seasons: zod.number().nullish(),
       totalEpisodes: zod.number().nullish(),
+      streamUrl: zod.string().nullish(),
     }),
   ),
   total: zod.number(),
@@ -75,7 +76,7 @@ export const GetContentResponse = zod
     releaseYear: zod.number(),
     rating: zod.string(),
     imdbScore: zod.number().nullish(),
-      rtScore: zod.number().nullish(),
+    rtScore: zod.number().nullish(),
     duration: zod.number().nullish(),
     genres: zod.array(zod.string()),
     featured: zod.boolean(),
@@ -83,6 +84,7 @@ export const GetContentResponse = zod
     trendingRank: zod.number().nullish(),
     seasons: zod.number().nullish(),
     totalEpisodes: zod.number().nullish(),
+    streamUrl: zod.string().nullish(),
   })
   .and(
     zod.object({
@@ -124,7 +126,7 @@ export const GetFeaturedHeroResponse = zod
     releaseYear: zod.number(),
     rating: zod.string(),
     imdbScore: zod.number().nullish(),
-      rtScore: zod.number().nullish(),
+    rtScore: zod.number().nullish(),
     duration: zod.number().nullish(),
     genres: zod.array(zod.string()),
     featured: zod.boolean(),
@@ -132,6 +134,7 @@ export const GetFeaturedHeroResponse = zod
     trendingRank: zod.number().nullish(),
     seasons: zod.number().nullish(),
     totalEpisodes: zod.number().nullish(),
+    streamUrl: zod.string().nullish(),
   })
   .and(
     zod.object({
@@ -188,6 +191,7 @@ export const GetTrendingResponse = zod.object({
       trendingRank: zod.number().nullish(),
       seasons: zod.number().nullish(),
       totalEpisodes: zod.number().nullish(),
+      streamUrl: zod.string().nullish(),
     }),
   ),
   total: zod.number(),
@@ -235,6 +239,7 @@ export const GetWatchlistResponse = zod.object({
       trendingRank: zod.number().nullish(),
       seasons: zod.number().nullish(),
       totalEpisodes: zod.number().nullish(),
+      streamUrl: zod.string().nullish(),
     }),
   ),
   total: zod.number(),

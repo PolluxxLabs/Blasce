@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,6 +21,7 @@ export const contentTable = pgTable("content", {
   trendingRank: integer("trending_rank"),
   seasons: integer("seasons"), // for TV
   totalEpisodes: integer("total_episodes"), // for TV
+  streamUrl: text("stream_url"), // moviebox.ph embed URL
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -68,6 +70,14 @@ export const insertGenreSchema = createInsertSchema(genresTable).omit({ id: true
 export const insertCastSchema = createInsertSchema(castTable).omit({ id: true });
 export const insertEpisodeSchema = createInsertSchema(episodesTable).omit({ id: true });
 export const insertWatchlistSchema = createInsertSchema(watchlistTable).omit({ id: true, addedAt: true });
+
+export const usersTable = pgTable("users", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  displayName: text("display_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export type Content = typeof contentTable.$inferSelect;
 export type Genre = typeof genresTable.$inferSelect;

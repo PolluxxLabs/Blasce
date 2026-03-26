@@ -295,6 +295,9 @@ components:
         imdbScore:
           type: number
           nullable: true
+        rtScore:
+          type: integer
+          nullable: true
         duration:
           type: integer
           nullable: true
@@ -314,6 +317,9 @@ components:
           nullable: true
         totalEpisodes:
           type: integer
+          nullable: true
+        streamUrl:
+          type: string
           nullable: true
       required:
         - id

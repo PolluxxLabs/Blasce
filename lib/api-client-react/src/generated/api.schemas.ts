@@ -59,6 +59,7 @@ export interface Content {
   trendingRank?: number | null;
   seasons?: number | null;
   totalEpisodes?: number | null;
+  streamUrl?: string | null;
 }
 
 export type ContentDetail = Content & {

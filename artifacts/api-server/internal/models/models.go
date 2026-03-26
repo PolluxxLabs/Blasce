@@ -18,6 +18,7 @@ type Content struct {
         TrendingRank  *int     `json:"trendingRank"`
         Seasons       *int     `json:"seasons"`
         TotalEpisodes *int     `json:"totalEpisodes"`
+        StreamURL     *string  `json:"streamUrl"`
         Genres        []string `json:"genres"`
 }
 

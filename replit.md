@@ -57,8 +57,9 @@ artifacts-monorepo/
 
 ## Content Library
 
-36 titles in the database (do NOT rerun seed — it truncates everything). Add new content via direct SQL INSERT.
+16 titles in the database. Add new content via direct SQL INSERT (do NOT rerun seed — it truncates everything).
 Scores are sourced from IMDB's public dataset and Rotten Tomatoes. The scraper is at `scripts/src/scrape.py`.
+Stream URLs sourced from moviebox.ph via `scripts/src/moviebox_stream_scraper.py` (8/16 titles matched).
 
 ## API Routes (Go)
 
