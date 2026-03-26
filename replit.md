@@ -39,7 +39,7 @@ artifacts-monorepo/
 
 ## Blasce Features
 
-- **Homepage**: Rotating hero banner with featured content (IMDB + RT score badges, runtime/seasons), Trending Now, Top Rated, New Releases carousels, curated genre rows
+- **Homepage**: Auto-rotating hero carousel (6 trending items, 9s crossfade, dot progress indicators, prev/next nav, pause-on-hover), Trending Now, Top Rated, New Releases carousels, curated genre rows (Drama, Crime, Sci-Fi, Comedy, Action, Horror, Animation)
 - **Browse page**: Filter by type (movie/TV), genre, search bar, full grid
 - **Detail page**: Cinematic backdrop, trailer embed, cast grid, episode list (TV shows by season), watchlist button
 - **Watchlist page**: Saved content grid, remove items
