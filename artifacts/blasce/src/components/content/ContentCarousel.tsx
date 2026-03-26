@@ -1,6 +1,7 @@
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "wouter";
 import type { Content } from "@workspace/api-client-react";
 import { ContentCard } from "./ContentCard";
 import { cn } from "@/lib/utils";
@@ -8,10 +9,11 @@ import { cn } from "@/lib/utils";
 interface ContentCarouselProps {
   title: string;
   items: Content[];
+  viewAllHref?: string;
   className?: string;
 }
 
-export function ContentCarousel({ title, items, className }: ContentCarouselProps) {
+export function ContentCarousel({ title, items, viewAllHref, className }: ContentCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
@@ -24,9 +26,10 @@ export function ContentCarousel({ title, items, className }: ContentCarouselProp
   const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
 
-  const onSelect = useCallback((emblaApi: any) => {
-    setPrevBtnDisabled(!emblaApi.canScrollPrev());
-    setNextBtnDisabled(!emblaApi.canScrollNext());
+  const onSelect = useCallback((api: typeof emblaApi) => {
+    if (!api) return;
+    setPrevBtnDisabled(!api.canScrollPrev());
+    setNextBtnDisabled(!api.canScrollNext());
   }, []);
 
   useEffect(() => {
@@ -38,23 +41,29 @@ export function ContentCarousel({ title, items, className }: ContentCarouselProp
   if (!items || items.length === 0) return null;
 
   return (
-    <div className={cn("relative py-6", className)}>
-      <div className="flex items-end justify-between px-4 md:px-8 mb-6">
-        <h2 className="text-2xl md:text-3xl font-display font-bold text-white">{title}</h2>
-        <div className="flex gap-2">
+    <div className={cn("relative", className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 md:px-8 mb-5">
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">{title}</h2>
+        <div className="flex items-center gap-3">
+          {viewAllHref && (
+            <Link href={viewAllHref} className="text-sm text-primary hover:text-primary/80 font-semibold transition-colors mr-2">
+              See all
+            </Link>
+          )}
           <button
             onClick={scrollPrev}
             disabled={prevBtnDisabled}
-            className="p-2 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white"
-            aria-label="Previous slide"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/6 hover:bg-white/12 disabled:opacity-25 disabled:cursor-not-allowed transition-colors text-white border border-white/8"
+            aria-label="Previous"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={scrollNext}
             disabled={nextBtnDisabled}
-            className="p-2 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white"
-            aria-label="Next slide"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/6 hover:bg-white/12 disabled:opacity-25 disabled:cursor-not-allowed transition-colors text-white border border-white/8"
+            aria-label="Next"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -62,9 +71,9 @@ export function ContentCarousel({ title, items, className }: ContentCarouselProp
       </div>
 
       <div className="overflow-hidden px-4 md:px-8" ref={emblaRef}>
-        <div className="flex gap-4 md:gap-6 -ml-4 pl-4">
+        <div className="flex gap-3 md:gap-5">
           {items.map((item, index) => (
-            <div key={item.id} className="flex-[0_0_40%] sm:flex-[0_0_28%] md:flex-[0_0_22%] lg:flex-[0_0_16%] min-w-0">
+            <div key={item.id} className="flex-[0_0_42%] sm:flex-[0_0_30%] md:flex-[0_0_22%] lg:flex-[0_0_17%] xl:flex-[0_0_14%] min-w-0">
               <ContentCard content={item} index={index} />
             </div>
           ))}

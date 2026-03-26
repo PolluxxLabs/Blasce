@@ -1,269 +1,401 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
-import { Play, Star, Calendar, Clock, Tv } from "lucide-react";
-import { motion } from "framer-motion";
-import { useGetContent } from "@workspace/api-client-react";
-import { LoadingSpinner, FullPageLoader } from "@/components/ui/LoadingSpinner";
+import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGetContent, useListContent } from "@workspace/api-client-react";
+import { FullPageLoader } from "@/components/ui/LoadingSpinner";
 import { WatchlistButton } from "@/components/content/WatchlistButton";
+import { ContentCarousel } from "@/components/content/ContentCarousel";
 import { formatDuration } from "@/lib/utils";
+
+function TrailerEmbed({ videoId }: { videoId: string }) {
+  const [playing, setPlaying] = useState(false);
+
+  if (playing) {
+    return (
+      <div className="aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+        <iframe
+          className="w-full h-full border-0"
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+          title="Trailer"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl relative cursor-pointer group"
+      onClick={() => setPlaying(true)}
+    >
+      <img
+        src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+        alt="Trailer thumbnail"
+        className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity duration-300"
+      />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center pl-1.5 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-300 shadow-2xl">
+          <Play className="w-8 h-8 fill-white text-white" />
+        </div>
+      </div>
+      <div className="absolute bottom-4 left-4 text-white/70 text-sm font-medium">Click to play trailer</div>
+    </div>
+  );
+}
+
+function SeasonSelector({ episodes }: { episodes: NonNullable<ReturnType<typeof useGetContent>["data"]>["episodes"] }) {
+  const [openSeason, setOpenSeason] = useState(1);
+
+  if (!episodes || episodes.length === 0) return null;
+
+  const seasons = [...new Set(episodes.map(e => e.season))].sort();
+
+  return (
+    <div className="space-y-3 max-w-4xl">
+      {seasons.map(season => {
+        const eps = episodes.filter(e => e.season === season);
+        const isOpen = openSeason === season;
+        return (
+          <div key={season} className="border border-white/8 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setOpenSeason(isOpen ? -1 : season)}
+              className="w-full flex items-center justify-between px-6 py-4 bg-secondary/20 hover:bg-secondary/40 transition-colors text-left"
+            >
+              <span className="font-display font-bold text-white text-lg">Season {season}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-white/40 text-sm">{eps.length} episode{eps.length !== 1 ? "s" : ""}</span>
+                {isOpen ? <ChevronUp className="w-5 h-5 text-white/40" /> : <ChevronDown className="w-5 h-5 text-white/40" />}
+              </div>
+            </button>
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: "auto" }}
+                  exit={{ height: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="divide-y divide-white/5">
+                    {eps.map(ep => (
+                      <div key={ep.id} className="flex items-start gap-5 px-6 py-4 hover:bg-white/3 transition-colors group cursor-pointer">
+                        <div className="w-32 sm:w-44 aspect-video flex-shrink-0 rounded-xl overflow-hidden bg-secondary/50 relative">
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Play className="w-6 h-6 text-white/30 group-hover:text-white/60 transition-colors" />
+                          </div>
+                          <div className="absolute bottom-1.5 right-1.5 bg-black/80 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
+                            {formatDuration(ep.duration)}
+                          </div>
+                        </div>
+                        <div className="flex-grow pt-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-primary text-xs font-bold font-mono">E{ep.episode}</span>
+                            <h4 className="text-white font-semibold text-sm truncate">{ep.title}</h4>
+                          </div>
+                          <p className="text-white/50 text-xs leading-relaxed line-clamp-2">{ep.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Detail() {
   const [, params] = useRoute("/content/:id");
   const id = params?.id ? parseInt(params.id, 10) : 0;
-  
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "cast">("overview");
 
   const { data: content, isLoading, isError } = useGetContent(id);
 
+  const primaryGenre = content?.genres?.[0];
+  const { data: related } = useListContent(
+    { genre: primaryGenre, limit: 12 },
+    { query: { enabled: !!primaryGenre } }
+  );
+  const relatedItems = related?.items?.filter(i => i.id !== id) ?? [];
+
   if (isLoading) return <FullPageLoader />;
-  
+
   if (isError || !content) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-display font-bold text-white mb-4">Content Not Found</h1>
-          <p className="text-white/60">The title you're looking for doesn't exist or has been removed.</p>
+          <h1 className="text-4xl font-display font-bold text-white mb-4">Not Found</h1>
+          <p className="text-white/50">This title doesn't exist or has been removed.</p>
         </div>
       </div>
     );
   }
 
-  const hasEpisodes = content.type === 'tv' && content.episodes && content.episodes.length > 0;
+  const hasEpisodes = content.type === "tv" && content.episodes && content.episodes.length > 0;
   const backdropImage = content.backdropUrl || `${import.meta.env.BASE_URL}images/hero-bg.png`;
+  const tabs = (["overview", "cast"] as const).concat(hasEpisodes ? ["episodes" as const] : []);
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* Hero Backdrop */}
-      <div className="relative w-full h-[60vh] md:h-[80vh]">
+      {/* ── Backdrop hero ── */}
+      <div className="relative w-full h-[55vh] md:h-[75vh]">
         <div className="absolute inset-0">
-          <img 
-            src={backdropImage} 
-            alt={content.title} 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          <img src={backdropImage} alt={content.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         </div>
 
-        {/* Content Info Overlap */}
-        <div className="absolute bottom-0 left-0 w-full translate-y-1/4">
-          <div className="max-w-[1600px] mx-auto px-4 md:px-8 flex flex-col md:flex-row gap-8 md:gap-12 items-end">
+        {/* Info overlap */}
+        <div className="absolute bottom-0 left-0 w-full translate-y-1/3 md:translate-y-1/4">
+          <div className="max-w-[1600px] mx-auto px-4 md:px-8 flex flex-col md:flex-row gap-6 md:gap-10 items-end">
             {/* Poster */}
-            <motion.div 
-              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.92 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.6, type: "spring" }}
-              className="w-48 md:w-72 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/80 border-2 border-white/10 hidden sm:block relative z-20"
+              transition={{ duration: 0.5, type: "spring", damping: 20 }}
+              className="hidden sm:block w-40 md:w-60 lg:w-72 flex-shrink-0 relative z-20"
             >
-              <div className="aspect-[2/3] bg-secondary">
+              <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.8)] border border-white/8">
                 {content.posterUrl ? (
-                   <img src={content.posterUrl} alt="Poster" className="w-full h-full object-cover" />
+                  <img src={content.posterUrl} alt="Poster" className="w-full h-full object-cover" />
                 ) : (
-                   <div className="w-full h-full flex items-center justify-center p-4 text-center text-white/50">{content.title}</div>
+                  <div className="w-full h-full bg-secondary flex items-center justify-center p-4 text-center text-white/30 text-sm">
+                    {content.title}
+                  </div>
                 )}
               </div>
             </motion.div>
 
-            {/* Main Info */}
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
+            {/* Main info */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex-grow pb-8 relative z-20"
+              transition={{ duration: 0.5, delay: 0.15 }}
+              className="flex-grow pb-6 md:pb-10 relative z-20 min-w-0"
             >
+              {/* Genre chips */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {content.genres.slice(0, 4).map(g => (
+                  <span key={g} className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-white/8 text-white/60 rounded-md border border-white/8">
+                    {g}
+                  </span>
+                ))}
+              </div>
+
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black text-white mb-4 leading-tight drop-shadow-lg">
                 {content.title}
               </h1>
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm md:text-base text-white/80 font-medium mb-8">
-                <span className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
-                  <Star className="w-4 h-4 fill-current" />
-                  {content.imdbScore?.toFixed(1) || "N/A"} <span className="text-white/40 text-xs ml-0.5">IMDB</span>
-                </span>
-                {content.rtScore != null && (
-                  <span className="flex items-center gap-1.5 text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 font-semibold">
-                    🍅 {content.rtScore}% <span className="text-white/40 text-xs font-normal ml-0.5">RT</span>
-                  </span>
+
+              {/* Scores + metadata */}
+              <div className="flex flex-wrap items-center gap-3 mb-7">
+                {content.imdbScore != null && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/25 rounded-lg">
+                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-yellow-400 font-bold text-sm">{content.imdbScore.toFixed(1)}</span>
+                    <span className="text-white/35 text-xs">IMDB</span>
+                  </div>
                 )}
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-white/50" />
+                {content.rtScore != null && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/25 rounded-lg">
+                    <span className="text-sm">🍅</span>
+                    <span className={`font-bold text-sm ${content.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
+                      {content.rtScore}%
+                    </span>
+                    <span className="text-white/35 text-xs">Rotten Tomatoes</span>
+                  </div>
+                )}
+                <span className="flex items-center gap-1.5 text-white/50 text-sm">
+                  <Calendar className="w-4 h-4" />
                   {content.releaseYear}
                 </span>
                 {content.rating && (
-                  <span className="px-2 py-0.5 border border-white/20 rounded text-white/90">
+                  <span className="px-2 py-0.5 border border-white/15 rounded text-white/60 text-xs font-bold">
                     {content.rating}
                   </span>
                 )}
-                {content.type === 'movie' && content.duration ? (
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-white/50" />
+                {content.type === "movie" && content.duration ? (
+                  <span className="flex items-center gap-1.5 text-white/50 text-sm">
+                    <Clock className="w-4 h-4" />
                     {formatDuration(content.duration)}
                   </span>
-                ) : content.type === 'tv' && content.seasons ? (
-                  <span className="flex items-center gap-1.5">
-                    <Tv className="w-4 h-4 text-white/50" />
-                    {content.seasons} {content.seasons === 1 ? 'Season' : 'Seasons'}
+                ) : content.type === "tv" && content.seasons ? (
+                  <span className="flex items-center gap-1.5 text-white/50 text-sm">
+                    <Tv className="w-4 h-4" />
+                    {content.seasons} Season{content.seasons !== 1 ? "s" : ""}
+                    {content.totalEpisodes ? ` · ${content.totalEpisodes} eps` : ""}
                   </span>
                 ) : null}
               </div>
 
-              <div className="flex flex-wrap gap-4 items-center">
-                <button className="flex items-center gap-3 px-8 py-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-lg transition-all shadow-[0_0_30px_rgba(var(--primary),0.4)] hover:shadow-[0_0_50px_rgba(var(--primary),0.6)] hover:-translate-y-1">
-                  <Play className="w-6 h-6 fill-current" />
-                  Play Trailer
-                </button>
-                <WatchlistButton contentId={content.id} variant="full" className="bg-secondary/80 backdrop-blur-md" />
+              <div className="flex flex-wrap gap-3 items-center">
+                {content.trailerUrl && (
+                  <button
+                    onClick={() => {
+                      document.getElementById("trailer-section")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="flex items-center gap-2.5 px-6 py-3 bg-white text-black rounded-xl font-bold text-base hover:bg-white/90 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                  >
+                    <Play className="w-5 h-5 fill-current" />
+                    Watch Trailer
+                  </button>
+                )}
+                <WatchlistButton contentId={content.id} variant="full" />
               </div>
             </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-40 md:mt-32">
+      {/* ── Main Content ── */}
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-48 md:mt-36 lg:mt-32">
         {/* Tabs */}
-        <div className="flex gap-8 border-b border-white/10 mb-12 overflow-x-auto hide-scrollbar">
-          {(["overview", "cast"] as const).concat(hasEpisodes ? ["episodes"] as const : []).map((tab) => (
+        <div className="flex gap-6 border-b border-white/8 mb-10 overflow-x-auto hide-scrollbar">
+          {tabs.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 text-lg font-display font-semibold capitalize tracking-wide whitespace-nowrap relative ${
-                activeTab === tab ? "text-white" : "text-white/40 hover:text-white/70"
+              className={`pb-4 text-base font-display font-semibold capitalize tracking-wide whitespace-nowrap relative transition-colors ${
+                activeTab === tab ? "text-white" : "text-white/35 hover:text-white/65"
               }`}
             >
-              {tab}
+              {tab === "episodes" ? `Episodes` : tab.charAt(0).toUpperCase() + tab.slice(1)}
               {activeTab === tab && (
-                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />
+                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
               )}
             </button>
           ))}
         </div>
 
-        {/* Tab Content */}
-        <div className="min-h-[400px]">
+        {/* Tab panels */}
+        <AnimatePresence mode="wait">
           {activeTab === "overview" && (
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-12"
-            >
-              <div className="lg:col-span-2 space-y-8">
-                <div>
-                  <h3 className="text-xl font-display font-bold text-white mb-4">Storyline</h3>
-                  <p className="text-lg text-white/70 leading-relaxed max-w-4xl">
-                    {content.description}
-                  </p>
-                </div>
-                
-                {content.trailerUrl && (
+            <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
+                <div className="lg:col-span-2 space-y-10">
+                  {/* Storyline */}
                   <div>
-                    <h3 className="text-xl font-display font-bold text-white mb-4">Trailer</h3>
-                    <div className="aspect-video rounded-2xl overflow-hidden bg-black border border-white/10">
-                       {/* Assuming trailerUrl is a full youtube embed URL or we format it. Simplification for demo: iframe */}
-                       <iframe 
-                        width="100%" 
-                        height="100%" 
-                        src={content.trailerUrl.includes('youtube') ? content.trailerUrl : `https://www.youtube.com/embed/dQw4w9WgXcQ`} 
-                        title="Trailer" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowFullScreen
-                        className="border-0"
-                      ></iframe>
-                    </div>
+                    <h3 className="text-lg font-display font-bold text-white mb-4">Storyline</h3>
+                    <p className="text-white/65 leading-relaxed text-base max-w-3xl">{content.description}</p>
                   </div>
-                )}
-              </div>
 
-              <div className="space-y-8">
-                <div className="p-6 rounded-2xl bg-secondary/30 border border-white/5 backdrop-blur-sm">
-                  <h4 className="font-display font-bold text-white mb-4 border-b border-white/10 pb-4">Details</h4>
-                  <dl className="space-y-4 text-sm">
-                    <div className="grid grid-cols-3 gap-4">
-                      <dt className="text-white/40">Genres</dt>
-                      <dd className="col-span-2 text-white/90 flex flex-wrap gap-2">
-                        {content.genres.map(g => (
-                          <span key={g} className="px-2 py-1 bg-white/5 rounded-md text-xs">{g}</span>
-                        ))}
-                      </dd>
+                  {/* Trailer */}
+                  {content.trailerUrl && (
+                    <div id="trailer-section">
+                      <h3 className="text-lg font-display font-bold text-white mb-4">Trailer</h3>
+                      <TrailerEmbed videoId={content.trailerUrl} />
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <dt className="text-white/40">Status</dt>
-                      <dd className="col-span-2 text-white/90">Released</dd>
-                    </div>
-                    {content.type === 'tv' && (
-                       <div className="grid grid-cols-3 gap-4">
-                        <dt className="text-white/40">Network</dt>
-                        <dd className="col-span-2 text-white/90">Blasce Original</dd>
+                  )}
+                </div>
+
+                {/* Sidebar */}
+                <div className="space-y-6">
+                  <div className="p-6 rounded-2xl bg-white/3 border border-white/8">
+                    <h4 className="font-display font-bold text-white mb-5 text-sm uppercase tracking-wider border-b border-white/8 pb-4">
+                      Details
+                    </h4>
+                    <dl className="space-y-4 text-sm">
+                      <div>
+                        <dt className="text-white/35 mb-1.5">Genres</dt>
+                        <dd className="flex flex-wrap gap-1.5">
+                          {content.genres.map(g => (
+                            <span key={g} className="px-2.5 py-1 bg-white/6 rounded-lg text-white/80 text-xs border border-white/8">{g}</span>
+                          ))}
+                        </dd>
                       </div>
-                    )}
-                  </dl>
+                      <div className="flex justify-between">
+                        <dt className="text-white/35">Year</dt>
+                        <dd className="text-white/80">{content.releaseYear}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-white/35">Rating</dt>
+                        <dd className="text-white/80">{content.rating || "—"}</dd>
+                      </div>
+                      {content.type === "movie" && content.duration && (
+                        <div className="flex justify-between">
+                          <dt className="text-white/35">Runtime</dt>
+                          <dd className="text-white/80">{formatDuration(content.duration)}</dd>
+                        </div>
+                      )}
+                      {content.type === "tv" && (
+                        <>
+                          {content.seasons && (
+                            <div className="flex justify-between">
+                              <dt className="text-white/35">Seasons</dt>
+                              <dd className="text-white/80">{content.seasons}</dd>
+                            </div>
+                          )}
+                          {content.totalEpisodes && (
+                            <div className="flex justify-between">
+                              <dt className="text-white/35">Episodes</dt>
+                              <dd className="text-white/80">{content.totalEpisodes}</dd>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {content.imdbScore != null && (
+                        <div className="flex justify-between">
+                          <dt className="text-white/35">IMDB</dt>
+                          <dd className="text-yellow-400 font-bold">{content.imdbScore.toFixed(1)} / 10</dd>
+                        </div>
+                      )}
+                      {content.rtScore != null && (
+                        <div className="flex justify-between">
+                          <dt className="text-white/35">Tomatometer</dt>
+                          <dd className={`font-bold ${content.rtScore >= 60 ? "text-red-400" : "text-yellow-400"}`}>
+                            {content.rtScore}%
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
 
           {activeTab === "cast" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <motion.div key="cast" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               {content.cast && content.cast.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
                   {content.cast.map((actor, idx) => (
-                    <div key={idx} className="group cursor-pointer">
-                      <div className="aspect-[3/4] rounded-xl overflow-hidden bg-secondary mb-3 relative">
-                        {actor.photoUrl ? (
-                           <img src={actor.photoUrl} alt={actor.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-secondary">
-                             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${actor.name}&backgroundColor=transparent`} alt="Avatar" className="w-2/3 h-2/3 opacity-50" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div key={idx} className="group">
+                      <div className="aspect-square rounded-2xl overflow-hidden bg-secondary mb-3 relative">
+                        <img
+                          src={actor.photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(actor.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear`}
+                          alt={actor.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
                       <h4 className="font-bold text-white text-sm line-clamp-1">{actor.name}</h4>
-                      <p className="text-xs text-primary mt-1 line-clamp-1">{actor.character}</p>
+                      <p className="text-xs text-primary/80 mt-0.5 line-clamp-1">{actor.character}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-white/50">Cast information not available.</p>
+                <p className="text-white/40 py-12 text-center">Cast information not available.</p>
               )}
             </motion.div>
           )}
 
           {activeTab === "episodes" && hasEpisodes && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl space-y-4">
-              {content.episodes?.map((ep) => (
-                <div key={ep.id} className="group flex flex-col sm:flex-row gap-6 p-4 md:p-6 rounded-2xl bg-secondary/20 hover:bg-secondary/50 border border-transparent hover:border-white/10 transition-all cursor-pointer">
-                  <div className="w-full sm:w-64 aspect-video bg-black rounded-xl overflow-hidden relative flex-shrink-0">
-                    {ep.thumbnailUrl ? (
-                      <img src={ep.thumbnailUrl} alt={ep.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
-                    ) : (
-                      <div className="w-full h-full bg-secondary/50 flex items-center justify-center">
-                        <Play className="w-8 h-8 text-white/30" />
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur text-white text-xs px-2 py-1 rounded font-mono">
-                      {formatDuration(ep.duration)}
-                    </div>
-                    {/* Play Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
-                      <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center pl-1 shadow-lg shadow-primary/50 text-white">
-                        <Play className="w-5 h-5 fill-current" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-grow flex flex-col justify-center">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-primary font-mono text-sm font-bold">S{ep.season} E{ep.episode}</span>
-                      <h4 className="text-xl font-bold text-white">{ep.title}</h4>
-                    </div>
-                    <p className="text-white/60 text-sm leading-relaxed line-clamp-3">
-                      {ep.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <motion.div key="episodes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <SeasonSelector episodes={content.episodes} />
             </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+
+        {/* ── More Like This ── */}
+        {relatedItems.length > 0 && (
+          <div className="mt-20 -mx-4 md:-mx-8">
+            <ContentCarousel title="More Like This" items={relatedItems} />
+          </div>
+        )}
       </div>
     </div>
   );

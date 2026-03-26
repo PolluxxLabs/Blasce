@@ -16,7 +16,7 @@ function GenreRow({ genreSlug, genreName }: { genreSlug: string; genreName: stri
   const { data, isLoading } = useListContent({ genre: genreSlug, limit: 12 });
   if (isLoading) return <LoadingSpinner className="py-12" />;
   if (!data?.items?.length) return null;
-  return <ContentCarousel title={genreName} items={data.items} />;
+  return <ContentCarousel title={genreName} items={data.items} viewAllHref={`/browse?genre=${genreSlug}`} />;
 }
 
 export default function Home() {
@@ -142,7 +142,7 @@ export default function Home() {
       {/* ── Content Rows ── */}
       <div className="relative z-20 -mt-32 space-y-8 md:space-y-12">
         {trending?.items?.length ? (
-          <ContentCarousel title="Trending Now" items={trending.items} />
+          <ContentCarousel title="Trending Now" items={trending.items} viewAllHref="/browse" />
         ) : null}
 
         {/* Top Rated */}
@@ -152,13 +152,13 @@ export default function Home() {
               <TrendingUp className="w-5 h-5 text-yellow-400" />
               <span className="text-white/50 text-sm font-semibold uppercase tracking-wider">Editor's pick</span>
             </div>
-            <ContentCarousel title="Top Rated" items={topRated.items} />
+            <ContentCarousel title="Top Rated" items={topRated.items} viewAllHref="/browse" />
           </section>
         ) : null}
 
         {/* New Releases */}
         {newReleases?.items?.length ? (
-          <ContentCarousel title="New Releases" items={newReleases.items} />
+          <ContentCarousel title="New Releases" items={newReleases.items} viewAllHref="/browse" />
         ) : null}
 
         {/* Genre rows: curated selection */}
