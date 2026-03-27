@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp, Globe, DollarSign, Film, ExternalLink } from "lucide-react";
+import { Play, Star, Calendar, Clock, Tv, ChevronDown, ChevronUp, Globe, DollarSign, Film, ExternalLink, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FullPageLoader } from "@/components/ui/LoadingSpinner";
 import { StreamPlayer } from "@/components/content/StreamPlayer";
+import { DownloadModal } from "@/components/content/DownloadModal";
 import { formatDuration } from "@/lib/utils";
 import { useRatings } from "@/hooks/useRatings";
 import {
@@ -119,6 +120,7 @@ function EpisodeList({
 
 function WatchMovie({ id }: { id: number }) {
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
 
   const { data: movie, isLoading, isError } = useQuery<TMDBMovie>({
     queryKey: ["tmdb-movie", id],
@@ -165,16 +167,34 @@ function WatchMovie({ id }: { id: number }) {
       country={country}
       watchButton={
         canStream ? (
-          <button
-            onClick={() => setPlayerOpen(true)}
-            className="flex items-center gap-2.5 px-6 py-3 bg-primary text-black rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.35)]"
-          >
-            <Play className="w-5 h-5 fill-current" />
-            Watch Now
-          </button>
+          <>
+            <button
+              onClick={() => setPlayerOpen(true)}
+              className="flex items-center gap-2.5 px-6 py-3 bg-primary text-black rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.35)]"
+            >
+              <Play className="w-5 h-5 fill-current" />
+              Watch Now
+            </button>
+            {movie.imdb_id && (
+              <button
+                onClick={() => setDownloadOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 bg-white/6 hover:bg-white/10 text-white/65 hover:text-white rounded-xl font-semibold text-sm transition-all border border-white/8 hover:border-white/15"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </button>
+            )}
+          </>
         ) : null
       }
     >
+      {downloadOpen && movie.imdb_id && (
+        <DownloadModal
+          imdbId={movie.imdb_id}
+          title={movie.title}
+          onClose={() => setDownloadOpen(false)}
+        />
+      )}
       {playerOpen && (
         <StreamPlayer
           imdbId={movie.imdb_id ?? undefined}

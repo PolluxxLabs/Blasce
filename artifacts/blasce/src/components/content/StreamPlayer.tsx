@@ -1,5 +1,6 @@
-import { X, ChevronDown, RefreshCw, Tv, Zap } from "lucide-react";
+import { X, ChevronDown, RefreshCw, Tv, Zap, Download } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { DownloadModal } from "./DownloadModal";
 
 interface SourceParams {
   imdbId?: string;
@@ -25,13 +26,12 @@ const SOURCES: Source[] = [
     available: ({ tmdbId }) => !!tmdbId,
     getUrl: ({ tmdbId, type, season, episode }) =>
       type === "tv"
-        ? `https://vidlink.pro/tv/${tmdbId}/${season ?? 1}/${episode ?? 1}?primaryColor=6C63FF&autoplay=true`
-        : `https://vidlink.pro/movie/${tmdbId}?primaryColor=6C63FF&autoplay=true`,
+        ? `https://vidlink.pro/tv/${tmdbId}/${season ?? 1}/${episode ?? 1}?primaryColor=f5a623&autoplay=true`
+        : `https://vidlink.pro/movie/${tmdbId}?primaryColor=f5a623&autoplay=true`,
   },
   {
     id: "vidsrc-to",
-    label: "Source 1",
-    badge: "Best",
+    label: "Source 2",
     available: ({ imdbId, tmdbId }) => !!(imdbId || tmdbId),
     getUrl: ({ imdbId, tmdbId, type, season, episode }) => {
       const id = tmdbId ?? imdbId;
@@ -41,8 +41,26 @@ const SOURCES: Source[] = [
     },
   },
   {
+    id: "autoembed",
+    label: "Source 3",
+    available: ({ imdbId }) => !!imdbId,
+    getUrl: ({ imdbId, type, season, episode }) =>
+      type === "tv"
+        ? `https://player.autoembed.cc/embed/tv/${imdbId}/${season ?? 1}/${episode ?? 1}`
+        : `https://player.autoembed.cc/embed/movie/${imdbId}`,
+  },
+  {
+    id: "smashy",
+    label: "Source 4",
+    available: ({ imdbId }) => !!imdbId,
+    getUrl: ({ imdbId, type, season, episode }) =>
+      type === "tv"
+        ? `https://player.smashy.stream/tv/${imdbId}?s=${season ?? 1}&e=${episode ?? 1}`
+        : `https://player.smashy.stream/movie/${imdbId}`,
+  },
+  {
     id: "2embed",
-    label: "Source 2",
+    label: "Source 5",
     available: ({ imdbId }) => !!imdbId,
     getUrl: ({ imdbId, type, season, episode }) =>
       type === "tv"
@@ -51,7 +69,7 @@ const SOURCES: Source[] = [
   },
   {
     id: "vidsrc-me",
-    label: "Source 3",
+    label: "Source 6",
     available: ({ imdbId }) => !!imdbId,
     getUrl: ({ imdbId, type, season, episode }) =>
       type === "tv"
@@ -73,30 +91,12 @@ interface StreamPlayerProps {
 export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onClose }: StreamPlayerProps) {
   const params: SourceParams = { imdbId, tmdbId, type, season, episode };
 
-  // Build the available source list
-  const available = SOURCES.filter(s => s.available(params));
-
-  // Prefer vidlink (tmdbId) → vidsrc.to (no tmdbId) for the first source
-  // Deduplicate the "Source 1" slot: use vidlink if tmdbId present, else vidsrc.to
-  const deduped: Source[] = [];
-  const hasVidlink = available.some(s => s.id === "vidlink");
-  for (const s of available) {
-    if (s.id === "vidsrc-to" && hasVidlink) continue; // skip vidsrc-to if vidlink available
-    deduped.push(s);
-  }
-
-  // Re-label sequentially
-  let srcNum = 1;
-  const sources = deduped.map(s => {
-    const label = s.badge ? `Source ${srcNum}` : `Source ${srcNum}`;
-    if (!s.badge) srcNum++;
-    else srcNum++;
-    return { ...s, label };
-  });
+  const sources = SOURCES.filter(s => s.available(params));
 
   const [sourceIndex, setSourceIndex] = useState(0);
   const [iframeKey, setIframeKey] = useState(0);
   const [showSources, setShowSources] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentSource = sources[sourceIndex] ?? sources[0];
@@ -131,11 +131,11 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-white/8 bg-black/60">
-        <div className="flex items-center gap-3 min-w-0">
-          {type === "tv" && <Tv className="w-4 h-4 text-primary flex-shrink-0" />}
-          <span className="text-white font-semibold text-sm truncate max-w-[40vw]">{title}</span>
-          {episodeLabel && <span className="text-white/45 text-sm font-mono flex-shrink-0">{episodeLabel}</span>}
+      <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0 border-b border-white/8 bg-[hsl(0,0%,5%)]">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {type === "tv" && <Tv className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+          <span className="text-white font-semibold text-sm truncate max-w-[32vw]">{title}</span>
+          {episodeLabel && <span className="text-white/40 text-sm font-mono flex-shrink-0">{episodeLabel}</span>}
         </div>
 
         <div className="flex items-center gap-1">
@@ -143,43 +143,60 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowSources(s => !s)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/8 transition-colors text-xs font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/7 transition-colors text-xs font-medium"
             >
-              {currentSource?.label ?? "Source 1"}
+              <span className="hidden sm:inline">{currentSource?.label ?? "Source 1"}</span>
+              <span className="sm:hidden">Source</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${showSources ? "rotate-180" : ""}`} />
             </button>
+
             {showSources && (
-              <div className="absolute right-0 top-full mt-1.5 bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 min-w-[145px]">
+              <div className="absolute right-0 top-full mt-1.5 bg-[hsl(0,0%,9%)] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 min-w-[170px]">
                 {sources.map((src, idx) => (
                   <button
                     key={src.id}
                     onClick={() => switchSource(idx)}
-                    className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                    className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between gap-3 ${
                       idx === sourceIndex
-                        ? "bg-primary/15 text-primary font-bold"
-                        : "text-white/65 hover:bg-white/6 hover:text-white"
+                        ? "bg-primary/12 text-primary font-bold"
+                        : "text-white/60 hover:bg-white/5 hover:text-white"
                     }`}
                   >
                     <span>{src.label}</span>
                     {src.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/20 text-primary">
-                        <Zap className="w-2.5 h-2.5 inline" /> {src.badge}
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary flex items-center gap-0.5">
+                        <Zap className="w-2.5 h-2.5" /> {src.badge}
                       </span>
+                    )}
+                    {idx === sourceIndex && !src.badge && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                     )}
                   </button>
                 ))}
-                <div className="border-t border-white/8 px-4 py-2 text-white/25 text-[10px]">
-                  Switch source if video doesn't load
+                <div className="border-t border-white/6 px-4 py-2 text-white/20 text-[10px]">
+                  Try another source if video won't load
                 </div>
               </div>
             )}
           </div>
 
-          <button onClick={reload} className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/8 transition-colors" title="Reload">
+          {/* Download button (movies only) */}
+          {type === "movie" && imdbId && (
+            <button
+              onClick={() => setShowDownload(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white/50 hover:text-primary hover:bg-primary/8 transition-colors text-xs font-medium"
+              title="Download"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download</span>
+            </button>
+          )}
+
+          <button onClick={reload} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/7 transition-colors" title="Reload">
             <RefreshCw className="w-4 h-4" />
           </button>
 
-          <button onClick={onClose} className="p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/8 transition-colors" title="Close (Esc)">
+          <button onClick={onClose} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/7 transition-colors" title="Close (Esc)">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -199,12 +216,21 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 bg-black/60 border-t border-white/5 flex items-center justify-between">
-        <p className="text-white/20 text-[11px]">
-          If video doesn't start, try a different source from the menu above
+      <div className="px-4 py-2 bg-[hsl(0,0%,5%)] border-t border-white/5 flex items-center justify-between">
+        <p className="text-white/18 text-[11px]">
+          Video not loading? Switch to a different source above.
         </p>
-        <p className="text-white/15 text-[11px]">Esc to close</p>
+        <p className="text-white/12 text-[11px]">Esc to close</p>
       </div>
+
+      {/* Download Modal */}
+      {showDownload && imdbId && (
+        <DownloadModal
+          imdbId={imdbId}
+          title={title}
+          onClose={() => setShowDownload(false)}
+        />
+      )}
     </div>
   );
 }

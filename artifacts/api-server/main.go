@@ -73,6 +73,9 @@ func main() {
                 r.Get("/stream-proxy", handlers.StreamProxy)
                 r.Get("/cn-proxy", handlers.CnProxy)
                 r.Get("/resolve", handlers.Resolve)
+
+                // Download links (YTS for movies)
+                r.Get("/download", handlers.GetDownloadLinks)
         })
 
         addr := fmt.Sprintf(":%s", port)
