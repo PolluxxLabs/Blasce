@@ -167,7 +167,7 @@ function WatchMovie({ id }: { id: number }) {
         canStream ? (
           <button
             onClick={() => setPlayerOpen(true)}
-            className="flex items-center gap-2.5 px-6 py-3 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/30"
+            className="flex items-center gap-2.5 px-6 py-3 bg-primary text-black rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.35)]"
           >
             <Play className="w-5 h-5 fill-current" />
             Watch Now
@@ -247,7 +247,7 @@ function WatchTv({ id }: { id: number }) {
         canStream ? (
           <button
             onClick={() => onPlay(1, 1)}
-            className="flex items-center gap-2.5 px-6 py-3 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/30"
+            className="flex items-center gap-2.5 px-6 py-3 bg-primary text-black rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.35)]"
           >
             <Play className="w-5 h-5 fill-current" />
             Watch S01 E01

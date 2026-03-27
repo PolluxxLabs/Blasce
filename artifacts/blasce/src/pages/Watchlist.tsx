@@ -55,7 +55,7 @@ export default function Watchlist() {
             <div className="flex items-center gap-4">
               <Link
                 href="/signup"
-                className="flex items-center gap-2 px-7 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                className="flex items-center gap-2 px-7 py-3.5 bg-primary hover:bg-primary/90 text-black rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.3)]"
               >
                 Create Account
               </Link>
@@ -143,7 +143,7 @@ export default function Watchlist() {
 
             <Link
               href="/browse"
-              className="flex items-center gap-2 px-7 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+              className="flex items-center gap-2 px-7 py-3.5 bg-primary hover:bg-primary/90 text-black rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.3)]"
             >
               <Compass className="w-5 h-5" />
               Explore Content

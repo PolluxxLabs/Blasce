@@ -99,6 +99,33 @@ Next insert IDs start at 50.
 - `setAuthTokenGetter(() => localStorage.getItem("blasce_token"))` wired in main.tsx
 - `AuthContext` exposes: signup, login, logout, updateUserProfile
 
+## Design System
+
+**Palette — Cinema Black:**
+- Background: `hsl(0, 0%, 4%)` — near-pure black
+- Card: `hsl(0, 0%, 8%)` | Secondary: `hsl(0, 0%, 12%)`
+- Primary: `hsl(38, 90%, 54%)` — warm golden amber (film projector light)
+- Primary foreground: `hsl(0, 0%, 6%)` — **all `bg-primary` buttons must use `text-black`**
+- Accent: `hsl(200, 75%, 62%)` — cerulean (Series badges, TV type labels)
+- Muted foreground: `hsl(0, 0%, 55%)`
+
+**Typography:**
+- Display font: `Syne` (700, 800) — cinematic, geometric, bold headings & titles
+- Body font: `Inter` (400, 500, 600) — clean UI copy
+
+**Utilities (index.css):**
+- `.shimmer` — animated skeleton loading gradient
+- `.grain::after` — noise overlay for hero sections
+- `.glow-gold` — amber glow box-shadow
+- `.text-gradient-gold` — gold gradient text clip
+- `.hide-scrollbar` — hides scrollbar for carousels
+
+**Component conventions:**
+- All primary action buttons: `bg-primary text-black` (NOT text-white)
+- Hover states on cards: amber play circle overlay, bottom-up info reveal
+- Series type badges: `bg-accent/80 text-white` (cerulean)
+- Star ratings: `text-primary` with `Star` icon `fill-current`
+
 ## TypeScript & Composite Projects
 
 Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references.

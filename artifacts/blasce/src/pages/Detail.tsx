@@ -330,7 +330,7 @@ export default function Detail() {
               <div className="flex flex-wrap gap-3 items-center">
                 <button
                   onClick={() => content.type === "tv" ? openPlayer(1, 1) : openPlayer()}
-                  className="flex items-center gap-2.5 px-6 py-3 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/30"
+                  className="flex items-center gap-2.5 px-6 py-3 bg-primary text-black rounded-xl font-bold text-base hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_24px_hsl(38,90%,54%,0.35)]"
                 >
                   <Play className="w-5 h-5 fill-current" />
                   {content.type === "tv" ? "Watch S01 E01" : "Watch Now"}
@@ -338,7 +338,7 @@ export default function Detail() {
                 {content.trailerUrl && (
                   <button
                     onClick={() => document.getElementById("trailer-section")?.scrollIntoView({ behavior: "smooth" })}
-                    className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-base bg-white/10 text-white hover:bg-white/20 border border-white/15 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                    className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-base bg-white/8 text-white hover:bg-white/14 border border-white/10 transition-all hover:scale-105 active:scale-95"
                   >
                     <Play className="w-5 h-5 fill-current" />
                     Watch Trailer
