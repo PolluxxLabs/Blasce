@@ -94,7 +94,7 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
   const params: SourceParams = { imdbId, tmdbId, type, season, episode };
   const embedSources = EMBED_SOURCES.filter(s => s.available(params));
 
-  const [activeSource, setActiveSource] = useState<string>("direct");
+  const [activeSource, setActiveSource] = useState<string>("vidlink");
   const [iframeKey, setIframeKey] = useState(0);
   const [showSources, setShowSources] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
@@ -292,7 +292,6 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
-            referrerPolicy="origin"
           />
         )}
       </div>
