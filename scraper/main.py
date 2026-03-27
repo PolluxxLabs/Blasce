@@ -12,7 +12,6 @@ from scrapler import (
     scrape_sources,
     scrape_homepage,
     scrape_trending,
-    scrape_subtitles,
     scrape_genres,
 )
 
@@ -245,15 +244,3 @@ async def get_download(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/subtitles/{movie_id}")
-async def get_subtitles(movie_id: str):
-    cache_key = f"subtitles:{movie_id}"
-    cached = get_cached(cache_key)
-    if cached:
-        return cached
-    try:
-        result = await scrape_subtitles(movie_id=movie_id)
-        set_cached(cache_key, result)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
