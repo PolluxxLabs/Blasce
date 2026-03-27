@@ -132,7 +132,7 @@ function WatchMovie({ id }: { id: number }) {
   const poster = tmdbPoster(movie.poster_path);
   const backdrop = tmdbBackdrop(movie.backdrop_path);
   const year = movie.release_date?.slice(0, 4);
-  const canStream = !!movie.imdb_id;
+  const canStream = true;
   const directors = getDirectors(movie.credits?.crew ?? []);
   const writers = getWriters(movie.credits?.crew ?? []);
   const budget = formatBudget(movie.budget);
@@ -175,9 +175,10 @@ function WatchMovie({ id }: { id: number }) {
         ) : null
       }
     >
-      {playerOpen && movie.imdb_id && (
+      {playerOpen && (
         <StreamPlayer
-          imdbId={movie.imdb_id}
+          imdbId={movie.imdb_id ?? undefined}
+          tmdbId={id}
           title={movie.title}
           type="movie"
           onClose={() => setPlayerOpen(false)}
@@ -205,7 +206,7 @@ function WatchTv({ id }: { id: number }) {
   const poster = tmdbPoster(tv.poster_path);
   const backdrop = tmdbBackdrop(tv.backdrop_path);
   const year = tv.first_air_date?.slice(0, 4);
-  const canStream = !!tv.imdb_id;
+  const canStream = true;
   const creators = (tv.created_by ?? []).map(c => c.name);
   const network = tv.networks?.[0]?.name ?? null;
   const keywords = tv.keywords?.results?.slice(0, 10) ?? [];
@@ -268,9 +269,10 @@ function WatchTv({ id }: { id: number }) {
         ) : null
       }
     >
-      {playerOpen && tv.imdb_id && (
+      {playerOpen && (
         <StreamPlayer
-          imdbId={tv.imdb_id}
+          imdbId={tv.imdb_id ?? undefined}
+          tmdbId={id}
           title={tv.name}
           type="tv"
           season={playerSeason}
