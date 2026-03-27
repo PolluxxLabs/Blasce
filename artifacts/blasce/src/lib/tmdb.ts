@@ -144,6 +144,27 @@ export function formatBudget(n: number | undefined): string | null {
   return `$${n}`;
 }
 
+export interface TMDBTrendingItem {
+  id: number;
+  media_type: "movie" | "tv";
+  title?: string;
+  name?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  release_date?: string;
+  first_air_date?: string;
+  vote_average?: number;
+  overview?: string;
+  genre_ids?: number[];
+}
+
+export async function getTrending(timeWindow: "day" | "week" = "week"): Promise<TMDBTrendingItem[]> {
+  const data = await get<{ results: TMDBTrendingItem[] }>(
+    `/trending/all/${timeWindow}?language=en-US`
+  );
+  return data.results.filter(r => r.media_type === "movie" || r.media_type === "tv");
+}
+
 export async function searchTmdb(query: string): Promise<TMDBSearchResult[]> {
   const data = await get<{ results: (TMDBSearchResult & { media_type: string })[] }>(
     `/search/multi?query=${encodeURIComponent(query)}&include_adult=false&page=1`
