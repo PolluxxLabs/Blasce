@@ -66,6 +66,8 @@ func main() {
 
                 // Ratings from IMDB + Rotten Tomatoes (via OMDb)
                 r.Get("/ratings", handlers.GetRatings)
+                // Full IMDB metadata (plot, poster, cast, director, writer, etc.)
+                r.Get("/meta", handlers.GetMeta)
 
                 // Ad-free stream proxy + direct HLS resolver
                 r.Get("/stream-proxy", handlers.StreamProxy)
