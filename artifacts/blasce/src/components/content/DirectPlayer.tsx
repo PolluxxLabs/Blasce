@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { Loader2, AlertCircle, ChevronDown, Server } from "lucide-react";
 
-interface DirectSource {
+export interface DirectSource {
   quality: string;
   url: string;
-  type: "mp4" | "hls" | string;
+  type: "mp4" | "hls" | "iframe" | string;
 }
 
 interface DirectPlayerProps {
@@ -15,7 +15,7 @@ interface DirectPlayerProps {
 
 const QUALITY_ORDER = ["1080p", "720p", "480p", "360p", "Auto", "Unknown"];
 
-function sortSources(sources: DirectSource[]): DirectSource[] {
+function sortMp4(sources: DirectSource[]): DirectSource[] {
   return [...sources].sort((a, b) => {
     const ai = QUALITY_ORDER.indexOf(a.quality);
     const bi = QUALITY_ORDER.indexOf(b.quality);
@@ -23,10 +23,67 @@ function sortSources(sources: DirectSource[]): DirectSource[] {
   });
 }
 
-export function DirectPlayer({ sources, title }: DirectPlayerProps) {
+// ── Iframe player (f2movies / videostr embed sources) ────────────────────────
+function IframePlayer({ sources, title }: DirectPlayerProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [key, setKey] = useState(0);
+
+  const active = sources[activeIdx];
+
+  function switchServer(idx: number) {
+    setActiveIdx(idx);
+    setLoaded(false);
+    setKey(k => k + 1);
+  }
+
+  return (
+    <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        </div>
+      )}
+
+      <iframe
+        key={key}
+        src={active?.url}
+        title={title}
+        className="w-full h-full border-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowFullScreen
+        onLoad={() => setLoaded(true)}
+      />
+
+      {sources.length > 1 && (
+        <div className="absolute top-3 right-3 z-20">
+          <div className="flex gap-1.5 flex-wrap justify-end">
+            {sources.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => switchServer(i)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                  i === activeIdx
+                    ? "bg-primary text-black border-primary"
+                    : "bg-black/70 backdrop-blur-sm text-white/70 border-white/10 hover:border-primary/50 hover:text-white"
+                }`}
+              >
+                <Server className="w-3 h-3" />
+                {s.quality}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Native video player (MP4 / HLS sources) ─────────────────────────────────
+function NativePlayer({ sources, title }: DirectPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const sorted = sortSources(sources);
+  const sorted = sortMp4(sources);
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -58,10 +115,7 @@ export function DirectPlayer({ sources, title }: DirectPlayerProps) {
         video.play().catch(() => {});
       });
       hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          setError(true);
-          setLoading(false);
-        }
+        if (data.fatal) { setError(true); setLoading(false); }
       });
     } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = active.url;
@@ -77,10 +131,7 @@ export function DirectPlayer({ sources, title }: DirectPlayerProps) {
     }
 
     return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
   }, [active]);
 
@@ -155,4 +206,16 @@ export function DirectPlayer({ sources, title }: DirectPlayerProps) {
       )}
     </div>
   );
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+export function DirectPlayer({ sources, title }: DirectPlayerProps) {
+  const hasIframe = sources.some(s => s.type === "iframe");
+  const iframeSources = sources.filter(s => s.type === "iframe");
+  const nativeSources = sources.filter(s => s.type !== "iframe");
+
+  if (hasIframe && iframeSources.length > 0) {
+    return <IframePlayer sources={iframeSources} title={title} />;
+  }
+  return <NativePlayer sources={nativeSources.length > 0 ? nativeSources : sources} title={title} />;
 }
