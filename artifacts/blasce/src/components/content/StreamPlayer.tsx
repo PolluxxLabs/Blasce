@@ -1,6 +1,8 @@
-import { X, ChevronDown, RefreshCw, Tv, Zap, Download } from "lucide-react";
+import { X, ChevronDown, RefreshCw, Tv, Zap, Download, Loader2 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { DownloadModal } from "./DownloadModal";
+import { DirectPlayer } from "./DirectPlayer";
+import { useDirectSources } from "@/hooks/useDirectSources";
 
 interface SourceParams {
   imdbId?: string;
@@ -18,7 +20,7 @@ interface Source {
   getUrl: (p: SourceParams) => string;
 }
 
-const SOURCES: Source[] = [
+const EMBED_SOURCES: Source[] = [
   {
     id: "vidlink",
     label: "Source 1",
@@ -90,17 +92,41 @@ interface StreamPlayerProps {
 
 export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onClose }: StreamPlayerProps) {
   const params: SourceParams = { imdbId, tmdbId, type, season, episode };
+  const embedSources = EMBED_SOURCES.filter(s => s.available(params));
 
-  const sources = SOURCES.filter(s => s.available(params));
-
-  const [sourceIndex, setSourceIndex] = useState(0);
+  const [activeSource, setActiveSource] = useState<string>("direct");
   const [iframeKey, setIframeKey] = useState(0);
   const [showSources, setShowSources] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentSource = sources[sourceIndex] ?? sources[0];
-  const iframeUrl = currentSource?.getUrl(params) ?? "";
+  const { data: directData, isLoading: directLoading } = useDirectSources(
+    title,
+    season,
+    episode,
+    true,
+  );
+
+  const hasDirectSources = !!(directData?.sources?.length);
+  const isDirectMode = activeSource === "direct";
+
+  const currentEmbed = embedSources.find(s => s.id === activeSource) ?? embedSources[0];
+  const iframeUrl = currentEmbed?.getUrl(params) ?? "";
+
+  const episodeLabel =
+    type === "tv" && season != null && episode != null
+      ? ` · S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`
+      : "";
+
+  const allLabels = [
+    {
+      id: "direct",
+      label: "Direct",
+      badge: hasDirectSources ? "HD" : directLoading ? "..." : undefined,
+    },
+    ...embedSources.map(s => ({ id: s.id, label: s.label, badge: s.badge })),
+  ];
+  const currentLabel = allLabels.find(l => l.id === activeSource) ?? allLabels[0];
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -117,13 +143,13 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  const switchSource = (idx: number) => { setSourceIndex(idx); setIframeKey(k => k + 1); setShowSources(false); };
   const reload = () => setIframeKey(k => k + 1);
 
-  const episodeLabel =
-    type === "tv" && season != null && episode != null
-      ? ` · S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`
-      : "";
+  function selectSource(id: string) {
+    setActiveSource(id);
+    setShowSources(false);
+    if (id !== "direct") setIframeKey(k => k + 1);
+  }
 
   return (
     <div
@@ -145,42 +171,65 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
               onClick={() => setShowSources(s => !s)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/7 transition-colors text-xs font-medium"
             >
-              <span className="hidden sm:inline">{currentSource?.label ?? "Source 1"}</span>
+              {isDirectMode && directLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+              ) : (
+                <Zap className="w-3.5 h-3.5 text-primary" />
+              )}
+              <span className="hidden sm:inline">{currentLabel.label}</span>
               <span className="sm:hidden">Source</span>
+              {currentLabel.badge && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  currentLabel.badge === "HD"
+                    ? "bg-primary/20 text-primary"
+                    : currentLabel.badge === "Best"
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-white/10 text-white/40"
+                }`}>
+                  {currentLabel.badge}
+                </span>
+              )}
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${showSources ? "rotate-180" : ""}`} />
             </button>
 
             {showSources && (
-              <div className="absolute right-0 top-full mt-1.5 bg-[hsl(0,0%,9%)] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 min-w-[170px]">
-                {sources.map((src, idx) => (
+              <div className="absolute right-0 top-full mt-1.5 bg-[hsl(0,0%,9%)] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 min-w-[180px]">
+                {allLabels.map(src => (
                   <button
                     key={src.id}
-                    onClick={() => switchSource(idx)}
+                    onClick={() => selectSource(src.id)}
                     className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between gap-3 ${
-                      idx === sourceIndex
+                      src.id === activeSource
                         ? "bg-primary/12 text-primary font-bold"
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     }`}
                   >
                     <span>{src.label}</span>
                     {src.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary flex items-center gap-0.5">
-                        <Zap className="w-2.5 h-2.5" /> {src.badge}
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
+                        src.badge === "HD"
+                          ? "bg-primary/20 text-primary"
+                          : src.badge === "Best"
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-white/10 text-white/40"
+                      }`}>
+                        {src.id === "direct" && <Zap className="w-2.5 h-2.5" />}
+                        {src.badge}
                       </span>
                     )}
-                    {idx === sourceIndex && !src.badge && (
+                    {src.id === activeSource && !src.badge && (
                       <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                     )}
                   </button>
                 ))}
                 <div className="border-t border-white/6 px-4 py-2 text-white/20 text-[10px]">
-                  Try another source if video won't load
+                  Direct = ad-free MP4 · Sources 1–6 = embed
                 </div>
               </div>
             )}
           </div>
 
-          {/* Download button (movies only) */}
+          {/* Download button */}
           {type === "movie" && imdbId && (
             <button
               onClick={() => setShowDownload(true)}
@@ -192,9 +241,11 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
             </button>
           )}
 
-          <button onClick={reload} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/7 transition-colors" title="Reload">
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          {!isDirectMode && (
+            <button onClick={reload} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/7 transition-colors" title="Reload">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          )}
 
           <button onClick={onClose} className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/7 transition-colors" title="Close (Esc)">
             <X className="w-5 h-5" />
@@ -202,28 +253,62 @@ export function StreamPlayer({ imdbId, tmdbId, title, type, season, episode, onC
         </div>
       </div>
 
-      {/* Player */}
-      <div className="flex-1 relative bg-black">
-        <iframe
-          key={iframeKey}
-          src={iframeUrl}
-          title={title}
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          referrerPolicy="origin"
-        />
+      {/* Player area */}
+      <div className="flex-1 relative bg-black overflow-hidden">
+        {isDirectMode ? (
+          <div className="w-full h-full flex items-center justify-center p-4 sm:p-8">
+            {directLoading ? (
+              <div className="flex flex-col items-center gap-4 text-white/40">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-sm">Searching for direct stream...</p>
+              </div>
+            ) : hasDirectSources ? (
+              <div className="w-full max-w-5xl">
+                <DirectPlayer sources={directData!.sources} title={title} />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                <Zap className="w-12 h-12 text-white/15" />
+                <div>
+                  <p className="text-white/60 font-semibold mb-1">No direct stream available</p>
+                  <p className="text-white/30 text-sm leading-relaxed">
+                    The scraper service hasn't indexed this title yet. Use Source 1–6 for instant playback.
+                  </p>
+                </div>
+                <button
+                  onClick={() => selectSource("vidlink")}
+                  className="px-5 py-2.5 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Switch to Source 1
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <iframe
+            key={iframeKey}
+            src={iframeUrl}
+            title={title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="origin"
+          />
+        )}
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 bg-[hsl(0,0%,5%)] border-t border-white/5 flex items-center justify-between">
+      <div className="px-4 py-2 bg-[hsl(0,0%,5%)] border-t border-white/5 flex items-center justify-between flex-shrink-0">
         <p className="text-white/18 text-[11px]">
-          Video not loading? Switch to a different source above.
+          {isDirectMode
+            ? hasDirectSources
+              ? "Direct MP4 stream — ad-free, quality selectable from player"
+              : "Switch to Source 1–6 for embed playback"
+            : "Video not loading? Switch to a different source above."}
         </p>
         <p className="text-white/12 text-[11px]">Esc to close</p>
       </div>
 
-      {/* Download Modal */}
       {showDownload && imdbId && (
         <DownloadModal
           imdbId={imdbId}

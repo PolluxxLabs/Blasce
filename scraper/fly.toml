@@ -1,0 +1,22 @@
+app = "blasce-scraper"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8001
+  force_https   = true
+  auto_stop_machines  = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type       = "connections"
+    hard_limit = 10
+    soft_limit = 8
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

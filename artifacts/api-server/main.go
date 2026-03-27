@@ -76,6 +76,15 @@ func main() {
 
                 // Download links (YTS for movies)
                 r.Get("/download", handlers.GetDownloadLinks)
+
+                // Scraper proxy — Python scraper service (Playwright-powered)
+                r.Route("/scraper", func(r chi.Router) {
+                        r.Get("/health", handlers.GetScraperHealth)
+                        r.Get("/search", handlers.GetScraperSearch)
+                        r.Get("/movie/{id}", handlers.GetScraperMovie)
+                        r.Get("/sources/{id}", handlers.GetSources)
+                        r.Get("/download/{id}", handlers.GetDownloadDirect)
+                })
         })
 
         addr := fmt.Sprintf(":%s", port)
